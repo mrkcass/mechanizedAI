@@ -1,0 +1,13 @@
+[Unit]
+Description=Initialize Somax OLED display
+After=somax.service
+
+[Service]
+TimeoutStartSec=5
+ExecStart=/root/oled/oled-ssd1351
+Environment="HOME=/home/root"
+WorkingDirectory=/root/oled/
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

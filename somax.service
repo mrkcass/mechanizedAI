@@ -1,0 +1,12 @@
+[Unit]
+Description=Initialize Somax resources
+After=xdk-daemon.service
+Requires=xdk-daemon.service
+
+[Service]
+TimeoutStartSec=1
+ExecStart=/bin/bash -c /root/somax_init.sh
+Environment="HOME=/home/root"
+
+[Install]
+WantedBy=multi-user.target

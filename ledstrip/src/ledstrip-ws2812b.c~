@@ -1,0 +1,257 @@
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <mraa/gpio.h>
+#include <mraa/spi.h>
+#include <sys/time.h>
+
+#define NUM_PIXELS 1
+
+struct GPIOPINS
+{
+    mraa_gpio_context pixels;
+};
+
+struct PIXEL
+{
+    int brightness;
+    int r,g,b;
+};
+
+struct PIXEL pixelmap[] = {{0x128, 0x128, 0x128, 0x128}};
+
+bool init_gpio(GPIOPINS * gpio);
+void reset(GPIOPINS * gpio);
+void send_pixel(struct GPIOPINS * gpio, struct PIXEL * pixel, int * bitcounter);
+void write_lo(mraa_gpio_context gpio, int *bitcounter);
+void write_hi(mraa_gpio_context gpio, int *bitcounter);
+void write_reset(mraa_gpio_context gpio, int *bitcounter);
+char * decode_error(mraa_result_t code);
+
+int bit_rate_scaler = 1;
+float min_kbit_rate = 500;
+float max_kbit_rate = 600;
+
+int main(int argc, char ** argv)
+{
+    printf("\nStarting Driver: LEDSTRIP-WS2812B\n");
+
+    struct GPIOPINS gpio;
+    init_gpio(&gpio);
+    reset(&gpio);
+    usleep(500000);
+
+    printf("\nEntering refresh loop bitscaler = %d\n", bit_rate_scaler);
+    int fcreset = 5;
+    int fc = fcreset;
+    uint64_t totaltime = 0;
+    int bitcounter = 0;
+    while (1)
+    {
+        struct timespec start, end;
+
+        clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+        for (int i=0; i < NUM_PIXELS; i++)
+        {
+            send_pixel(&gpio, &pixelmap[i], &bitcounter);
+        }
+        clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+        write_reset(gpio.pixels, &bitcounter);
+
+        uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+        totaltime += delta_us;
+        fc--;
+        if (!fc)
+        {
+            float bps = (float) bitcounter / ((float)totaltime / 1000000.0);
+            printf("Bit Rate: %5.2f Kbps\n", bps / 1000.0);
+            // if (bps/1000.0 > max_kbit_rate)
+            // {
+            //     bit_rate_scaler++;
+            //     printf("    Tuning the bit rate scaler. new value: %d\n", bit_rate_scaler);
+            // }
+            // else if (bps/1000.0 < min_kbit_rate)
+            // {
+            //     if (bit_rate_scaler > 1)
+            //     {
+            //         bit_rate_scaler--;
+            //         printf("    Tuning the bit rate scaler. new value: %d\n", bit_rate_scaler);
+            //     }
+            //     else
+            //         printf("    Tuning the bit rate scaler. scaler exhasted\n");
+            // }
+            totaltime = 0;
+            fc = fcreset;
+            bitcounter = 0;
+        }
+        usleep(300000);
+    }
+
+    return 0;
+}
+
+void reset(struct GPIOPINS * gpio)
+{
+	for(int i=0; i<1000; i++)
+        mraa_gpio_write(gpio->pixels, 0);
+}
+
+void send_pixel(struct GPIOPINS *gpio, struct PIXEL *pixel, int *bitcounter)
+{
+	for(int i=0;i<8;i++) pixel->r & (0x80>>i) ? write_lo(gpio->pixels, bitcounter) : write_hi(gpio->pixels, bitcounter);
+    for(int i=0;i<8;i++) pixel->g & (0x80>>i) ? write_lo(gpio->pixels, bitcounter) : write_hi(gpio->pixels, bitcounter);
+    for(int i=0;i<8;i++) pixel->b & (0x80>>i) ? write_lo(gpio->pixels, bitcounter) : write_hi(gpio->pixels, bitcounter);
+    *bitcounter += 24;
+}
+
+void write_reset(mraa_gpio_context gpio, int *bitcounter)
+{
+    //int bit_rate_scaler = 8;
+    int wfactor = 1;
+    int bfactor = 3;
+    int hi = 1, lo = 0;
+
+    mraa_gpio_write(gpio, lo);
+    usleep(100);
+    // //while (1)
+    // {
+    // for (int busy = 0; busy < bit_rate_scaler * bfactor; busy++) mraa_gpio_write(gpio, lo);
+    // for (int wait = 0; wait < bit_rate_scaler * wfactor; wait++) mraa_gpio_write(gpio, );
+    // //*bitcounter += bit_rate_scaler * (bfactor + wfactor);
+    // }
+    *bitcounter += 1;
+}
+
+void write_hi(mraa_gpio_context gpio, int *bitcounter)
+{
+    //int bit_rate_scaler = 8;
+    int wfactor = 2;
+    int bfactor = 4;
+    int hi = 1, lo = 1;
+
+    for (int busy = 0; busy < bit_rate_scaler * bfactor; busy++) mraa_gpio_write(gpio, hi);
+    for (int wait = 0; wait < bit_rate_scaler * wfactor; wait++) mraa_gpio_write(gpio, lo);
+    //*bitcounter += bit_rate_scaler * (bfactor + wfactor);
+}
+
+void write_lo(mraa_gpio_context gpio, int *bitcounter)
+{
+    //int bit_rate_scaler = 8;
+    int wfactor = 2;
+    int bfactor = 4;
+    int hi = 1, lo = 1;
+    for (int wait = 0; wait < bit_rate_scaler * wfactor; wait++) mraa_gpio_write(gpio, hi);
+    for (int busy = 0; busy < bit_rate_scaler * bfactor; busy++) mraa_gpio_write(gpio, lo);
+    //*bitcounter += bit_rate_scaler * (bfactor + wfactor);
+}
+
+bool init_gpio(struct GPIOPINS * gpio)
+{
+    mraa_result_t result;
+    printf ("\nInitalizing GPIO..\n");
+    gpio->pixels = mraa_gpio_init_raw(15);
+    printf ("  GPIO15: %p\n", gpio->pixels);
+    mraa_gpio_use_mmaped(gpio->pixels, 1);
+    result = mraa_gpio_dir(gpio->pixels, MRAA_GPIO_OUT);
+    if (result == MRAA_SUCCESS)
+        result = mraa_gpio_mode(gpio->pixels, MRAA_GPIO_PULLUP);
+    if (result == MRAA_SUCCESS)
+
+        printf("  GPIO15: set direction out\n");
+    else
+    {
+        printf("  GPIO15 ERROR: Could not set direction = out. [%d]%s\n", result, decode_error(result));
+        return false;
+    }
+
+    return true;
+}
+
+
+char * decode_error(mraa_result_t code)
+{
+    switch (code)
+    {
+        case MRAA_SUCCESS:
+        {
+            static char decode01[] = "Expected response";
+            return decode01;
+        }
+        case MRAA_ERROR_FEATURE_NOT_IMPLEMENTED:
+        {
+            static char decode02[] = "Feature TODO";
+            return decode02;
+        }
+        case MRAA_ERROR_FEATURE_NOT_SUPPORTED:
+        {
+            static char decode03[] = "Feature not";
+            return decode03;
+        }
+        case MRAA_ERROR_INVALID_VERBOSITY_LEVEL:
+        {
+            static char decode04[] = "Verbosity level";
+            return decode04;
+        }
+        case MRAA_ERROR_INVALID_PARAMETER:
+        {
+            static char decode05[] = "Parameter invalid";
+            return decode05;
+        }
+        case MRAA_ERROR_INVALID_HANDLE:
+        {
+            static char decode06[] = "Handle invalid";
+            return decode06;
+        }
+        case MRAA_ERROR_NO_RESOURCES:
+        {
+            static char decode07[] = "No resource";
+            return decode07;
+        }
+        case MRAA_ERROR_INVALID_RESOURCE:
+        {
+            static char decode08[] = "Resource invalid";
+            return decode08;
+        }
+        case MRAA_ERROR_INVALID_QUEUE_TYPE:
+        {
+            static char decode09[] = "Queue type";
+            return decode09;
+        }
+        case MRAA_ERROR_NO_DATA_AVAILABLE:
+        {
+            static char decode10[] = "No data";
+            return decode10;
+        }
+        case MRAA_ERROR_INVALID_PLATFORM:
+        {
+            static char decode11[] = "Platform not";
+            return decode11;
+        }
+        case MRAA_ERROR_PLATFORM_NOT_INITIALISED:
+        {
+            static char decode12[] = "Board information";
+            return decode12;
+        }
+        case MRAA_ERROR_UART_OW_SHORTED:
+        {
+            static char decode12[] = "UART OW";
+            return decode12;
+        }
+        case MRAA_ERROR_UART_OW_NO_DEVICES:
+        {
+            static char decode13[] = "UART OW";
+            return decode13;
+        }
+        case MRAA_ERROR_UART_OW_DATA_ERROR:
+        {
+            static char decode14[] = "UART OW";
+            return decode14;
+        }
+        case MRAA_ERROR_UNSPECIFIED:
+        {
+            static char decode15[] = "Uknown Error";
+            return decode15;
+        }
+    }
+    return 0;
+}

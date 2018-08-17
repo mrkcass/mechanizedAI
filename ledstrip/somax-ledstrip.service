@@ -1,0 +1,13 @@
+[Unit]
+Description=Initialize Somax LED strip
+After=somax.service
+
+[Service]
+TimeoutStartSec=5
+ExecStart=/root/ledstrip/ledstrip-ws2812b
+Environment="HOME=/home/root"
+WorkingDirectory=/root/ledstrip/
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
