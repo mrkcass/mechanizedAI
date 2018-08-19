@@ -10,7 +10,7 @@
 #include <fcntl.h>
 
 #include "joystick.h"
-#include "i2c_interface.h"
+#include "adc50.h"
 
 //#define KEYPRESS_ENABLED 1
 
@@ -24,10 +24,6 @@ struct termios orig_termios;
 #define JSTICK2_DIG_IN_BTN  5
 
 #define NUM_POWER_LEVELS 5
-
-#define ADC50_I2C_BUS_NUM 1
-#define ADC50_I2C_ADDRESS 48
-#define FILTER_SAMPLES_PER_SECOND 50
 
 static char RUN_STR[11] =  "run   \n";
 static char STOP_STR[11] = "stop  \n";
@@ -52,6 +48,7 @@ int getch();
 #endif
 int send_to_mcu(char * msg);
 int run(Joystick * jstick_left, Joystick * jstick_right);
+int joy3d_testsample(mraa_i2c_context i2c1);
 
 int main(int argc, char * argv[])
 {
@@ -62,6 +59,8 @@ int main(int argc, char * argv[])
 	mraa_i2c_context i2c = NULL;
 
 	i2c = i2c_open(ADC50_I2C_BUS_NUM);
+	adc50_init(i2c, ADC50_INPUT_JOY3D);
+	joy3d_testsample(i2c);
 
 	// jstick_left.connect(JSTICK1_ANALOG_IN_X, JSTICK1_ANALOG_IN_Y, JSTICK1_DIG_IN_BTN, false);
 	// jstick_right.connect(JSTICK2_ANALOG_IN_X, JSTICK2_ANALOG_IN_Y, JSTICK2_DIG_IN_BTN, false);
@@ -81,6 +80,22 @@ int main(int argc, char * argv[])
 	}
 	mraa_deinit();
 	return had_error;
+}
+
+int joy3d_testsample(mraa_i2c_context i2c1)
+{
+	printf("Sampling JOY3D:\n");
+	while (1)
+	{
+		int a0 = adc50_sample_single_end(i2c1, 0);
+		int a1 = adc50_sample_single_end(i2c1, 1);
+		int a2 = adc50_sample_single_end(i2c1, 2);
+
+		printf("   JOYPAN[0]: %6d   JOYTILT[2]: %6d  JOYROTATE[1]: %6d\r", a0, a2, a1);
+		fflush(stdout);
+		usleep(1000000 / 20);
+	}
+	return 0;
 }
 
 int run(Joystick * jstick_left, Joystick * jstick_right)

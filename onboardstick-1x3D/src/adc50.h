@@ -1,69 +1,99 @@
+#ifndef __adc50_h__
+#define __adc50_h__
 
-//ADC50 is a 16 bit analog to digital converter with 4 5 volt inputs. ADC50
-//uses the I2C protocol for reading or writing of data and configuration.
-//ADC50 inputs A0 - A3 are accessible through the on board stick jack when
-//onboard joysticks are not in use.
-//based on the Texas Instruments
-//ADS 1115.
+// ADC50 is a 16 bit analog to digital converter with 4 5 volt inputs. ADC50
+// uses the I2C protocol for reading or writing of data and configuration.
+// ADC50 inputs A0 - A3 are accessible through the on board stick jack when
+// onboard joysticks are not in use.
 //
+// Hardware: Texas Instruments ADS 1115.
+//
+
+#include "i2c_interface.h"
+
 
 
 #define ADC50_I2C_BUS_NUM 1
-#define ADC50_I2C_ADDRESS 48
+#define ADC50_I2C_ADDRESS 0x48
 
-//Sample rate - (sps = samples per second)
-#define   ADC50_SPS_8    0x0000
-#define   ADC50_SPS_16   0x0020
-#define   ADC50_SPS_32   0x0040
-#define   ADC50_SPS_64   0x0060
-#define   ADC50_SPS_128  0x0080
-#define   ADC50_SPS_250  0x00A0
-#define   ADC50_SPS_475  0x00C0
-#define   ADC50_SPS_860  0x00E0
+#define ADC50_INPUT_NONE    0
+#define ADC50_INPUT_JOY3D   1
+#define ADC50_INPUT_JOY2X2D 2
 
-//taken and renamed from https://github.com/intel-iot-devkit/upm/blob/master/src/ads1x15/ads1x15.hpp
-/*=========================================================================
-    POINTER REGISTER
-    -----------------------------------------------------------------------*/
-#define ADC50_REG_POINTER_MASK (0x03)
-#define ADC50_REG_POINTER_CONVERT (0x00)
-#define ADC50_REG_POINTER_CONFIG (0x01)
-#define ADC50_REG_POINTER_LOWTHRESH (0x02)
-#define ADC50_REG_POINTER_HITHRESH (0x03)
-/*=========================================================================*/
+int adc50_init(mraa_i2c_context i2c1, int adc50_input);
+int adc50_sample_single_end(mraa_i2c_context i2c1, int channel);
 
-/*=========================================================================
-    CONFIG REGISTER
-    -----------------------------------------------------------------------*/
-#define ADC50_OS_MASK (0x8000)
-#define ADC50_OS_SINGLE (0x8000)  // Write: Set to start a single-conversion
-#define ADC50_OS_BUSY (0x0000)    // Read: Bit = 0 when conversion is in progress
-#define ADC50_OS_NOTBUSY (0x8000) // Read: Bit = 1 when device is not performing a conversion
 
-#define ADC50_MUX_MASK (0x7000)
-#define ADC50_MUX_DIFF_0_1 (0x0000) // Differential P = AIN0, N = AIN1 (default)
-#define ADC50_MUX_DIFF_0_3 (0x1000) // Differential P = AIN0, N = AIN3
-#define ADC50_MUX_DIFF_1_3 (0x2000) // Differential P = AIN1, N = AIN3
-#define ADC50_MUX_DIFF_2_3 (0x3000) // Differential P = AIN2, N = AIN3
-#define ADC50_MUX_SINGLE_0 (0x4000) // Single-ended AIN0
-#define ADC50_MUX_SINGLE_1 (0x5000) // Single-ended AIN1
-#define ADC50_MUX_SINGLE_2 (0x6000) // Single-ended AIN2
-#define ADC50_MUX_SINGLE_3 (0x7000) // Single-ended AIN3
 
-#define ADC50_PGA_MASK (0x0E00)
-#define ADC50_PGA_6_144V (0x0000) // +/-6.144V range = Gain 2/3
-#define ADC50_PGA_4_096V (0x0200) // +/-4.096V range = Gain 1
-#define ADC50_PGA_2_048V (0x0400) // +/-2.048V range = Gain 2 (default)
-#define ADC50_PGA_1_024V (0x0600) // +/-1.024V range = Gain 4
-#define ADC50_PGA_0_512V (0x0800) // +/-0.512V range = Gain 8
-#define ADC50_PGA_0_256V (0x0A00) // +/-0.256V range = Gain 16
+//ADC50 CONFIGURATION
+#define ADC50_STATUS_BIT0 15
+#define ADC50_STATUS_BIT0MASK 0x01
+#define ADC50_STATUS_START_SINGLE 0x01
 
-#define ADC50_MODE_MASK (0x0100)
-#define ADC50_MODE_CONTIN (0x0000) // Continuous conversion mode
-#define ADC50_MODE_SINGLE (0x0100) // Power-down single-shot mode (default)
+//CONFIG MUX BITS
+#define ADC50_MUX_BIT0 12
+#define ADC50_MUX_BIT0MASK 0x07
+#define ADC50_MUX_DIFF_0_1 0x00
+#define ADC50_MUX_DIFF_0_3 0x01
+#define ADC50_MUX_DIFF_1_3 0x02
+#define ADC50_MUX_DIFF_2_3 0x03
+#define ADC50_MUX_SINGLE_1 0x04
+#define ADC50_MUX_SINGLE_2 0x05
+#define ADC50_MUX_SINGLE_3 0x06
+#define ADC50_MUX_SINGLE_4 0x07
 
-#define ADC50_DR_MASK (0x00E0)
+//CONFIG PGA BITS
+#define ADC50_PGA_BIT0 9
+#define ADC50_PGA_BIT0MASK 0x07
+#define ADC50_PGA_RANGE_6144V 0x00
+#define ADC50_PGA_RANGE_4096V 0x01
+#define ADC50_PGA_RANGE_2048V 0x02
+#define ADC50_PGA_RANGE_1024V 0x03
+#define ADC50_PGA_RANGE_0512V 0x04
+#define ADC50_PGA_RANGE_0256V 0x05
 
-#define ADC50_CMODE_MASK (0x0010)
-#define ADC50_CMODE_TRAD (0x0000)   // Traditional comparator with hysteresis (default)
-#define ADC50_CMODE_WINDOW (0x0010) // Window comparator
+//CONFIG CONVERSION MODE BITS
+#define ADC50_MODE_BIT0 8
+#define ADC50_MODE_BIT0MASK 0x01
+#define ADC50_CONVMODE_CONTINUOUS 0x00
+#define ADC50_CONVMODE_SINGLE 0x01
+
+//CONFIG DATA RATE BITS
+#define ADC50_DATARATE_BIT0 5
+#define ADC50_DATARATE_BIT0MASK 0x07
+#define ADC50_DATARATE_8 0x00
+#define ADC50_DATARATE_16 0x01
+#define ADC50_DATARATE_32 0x02
+#define ADC50_DATARATE_64 0x03
+#define ADC50_DATARATE_128 0x04
+#define ADC50_DATARATE_250 0x05
+#define ADC50_DATARATE_475 0x06
+#define ADC50_DATARATE_860 0x07
+
+//CONFIG COMPARATOR MODE BITS
+#define ADC50_COMPAREMODE_BIT0 4
+#define ADC50_COMPAREMODE_BIT0MASK 0x01
+#define ADC50_COMPARE_MODETRADITIONAL 0x00
+#define ADC50_COMPARE_MODEWINDOW 0x01
+
+//CONFIG COMPARATOR POLARITY BITS
+#define ADC50_COMPAREPOLARITY_BIT0 3
+#define ADC50_COMPAREPOLARITY_BIT0MASK 0x01
+#define ADC50_COMPARE_POLARITYACTIVELO 0x00
+#define ADC50_COMPARE_POLARITYACTIVEHI 0x01
+
+//CONFIG COMPARATOR LATCHING BITS
+#define ADC50_COMPARELATCH_BIT0 2
+#define ADC50_COMPARELATCH_BIT0MASK 0x01
+#define ADC50_COMPARE_NONLATCHING 0x00
+#define ADC50_COMPARE_LATCHING 0x01
+
+//CONFIG COMPARATOR QUEUEING BITS
+#define ADC50_COMPAREQUE_BIT0 0
+#define ADC50_COMPAREQUE_BIT0MASK 0x03
+#define ADC50_COMPARE_QUE_1 0x00
+#define ADC50_COMPARE_QUE_2 0x01
+#define ADC50_COMPARE_QUE_4 0x02
+#define ADC50_COMPARE_OFF 0x03
+
+#endif
