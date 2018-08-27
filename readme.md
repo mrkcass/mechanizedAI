@@ -53,9 +53,11 @@ Inference is another story and can easily be executed on a portable device in
 a reasonable amount of time. Somax uses 4 Myraid 2 compute engines like the one's
 found in the neural compute sticks. Each deleivers 100 GFLOPS of computation for
 1 watt of power used. To give some scale, one Myriad 2 connected to a raspberry 3
-increases it's computational power by 9x (https://movidius.github.io/blog/ncs-rpi3-mobilenets/).
-So when the wind is blowing at our back, somax should be able to process 36x
-a more inferences in the same amount of time when compared to a raspberry pi 3.
+increases it's computational power by 9x (movidius.github.io/blog/ncs-rpi3-mobilenets).
+So when the wind is blowing at our back, Somax should be able to process 36x
+more inferences in the same amount of time when compared to a raspberry pi 3. And
+for a bit more scale with respect spefically to inference, Somax will have that same
+ability as a Skylake Intel I7-6700k 4.2 GHz quad core desktop processor.
 
 Mechanized AI will offer an end to end solution to address training and inference.
 The AI mech will infer, capture, and interact. When ready to train, the mech will
@@ -65,6 +67,12 @@ for training. When training is complete, the mech will upload the new models, cl
 wake up and begin again with capture, infer, and interact functions. I hope to make
 this like the apple of AI devices. It does only a few things but it does them very
 well, without much help and everytime :-)
+
+&nbsp;
+
+<span style="font-size:larger;">**Resources**</span>
+
+To  learn more about mechanizedAI and Somax please visit: www.mechanizedAI.com
 
 &nbsp;
 
@@ -80,5 +88,7 @@ the domain mechanizedAI.
 But there is a request.
 
 Use it to make the world better for everyone :-)
+
+&nbsp;
 
 **-mechanizedAI**
