@@ -8,7 +8,7 @@
 | Model      | JH-D400X-R4 |
 | Voltage    | 3.3v (5.0v) |
 | Power      | n/a         |
-| Dimensions |	49x49x95    |
+| Dimensions |	49x49x95   |
 | Axis       | 3           |
 | Button     | 1           |
 | Resistance | 10k         |
@@ -22,7 +22,8 @@ None
 
 
 **Pin Map**
-|JH-D400 Pin	| Edison Mini-Breakout Pin	 Sensor Pin |
+
+|JH-D400 Pin	| Edison Mini-Breakout Pin |
 |------------- | ------------------------- |
 | VIN          | 5.0 POWER                 |
 | GND          | GND                       |
