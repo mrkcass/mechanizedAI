@@ -34,63 +34,63 @@ void adc50_dump_config(int config);
 static struct ADC50_CONFIG_REGISTER adc50_config_register;
 
 char ADC50_MUX_REG_STR[][32] = {
-    "[0x00] Differential 0-1",
-    "[0x01] Differential 0-3",
-    "[0x02] Differential 1-3",
-    "[0x03] Differential 2-3",
-    "[0x04] Single Ended channel 0",
-    "[0x05] Single Ended channel 1",
-    "[0x06] Single Ended channel 2",
-    "[0x07] Single Ended channel 3",
+   "[0x00] Differential 0-1",
+   "[0x01] Differential 0-3",
+   "[0x02] Differential 1-3",
+   "[0x03] Differential 2-3",
+   "[0x04] Single Ended channel 0",
+   "[0x05] Single Ended channel 1",
+   "[0x06] Single Ended channel 2",
+   "[0x07] Single Ended channel 3",
 };
 
 char ADC50_PGA_REG_STR[][32] = {
-    "[0x00] Range +/- 6.144v",
-    "[0x01] Range +/- 4.096v",
-    "[0x02] Range +/- 2.048v",
-    "[0x03] Range +/- 1.024v",
-    "[0x04] Range +/- 0.512v",
-    "[0x05] Range +/- 0.256v",
-    "[0x06] Range +/- 0.256v",
-    "[0x07] Range +/- 0.256v",
+   "[0x00] Range +/- 6.144v",
+   "[0x01] Range +/- 4.096v",
+   "[0x02] Range +/- 2.048v",
+   "[0x03] Range +/- 1.024v",
+   "[0x04] Range +/- 0.512v",
+   "[0x05] Range +/- 0.256v",
+   "[0x06] Range +/- 0.256v",
+   "[0x07] Range +/- 0.256v",
 };
 
 char ADC50_MODE_REG_STR[][64] = {
-    "[0x00] Continuous conversion",
-    "[0x01] Single-shot or powered down",
+   "[0x00] Continuous conversion",
+   "[0x01] Single-shot or powered down",
 };
 
 char ADC50_DATARATE_REG_STR[][64] = {
-    "[0x00] 8 Samples Per Second",
-    "[0x01] 16 Samples Per Second",
-    "[0x02] 32 Samples Per Second",
-    "[0x03] 64 Samples Per Second",
-    "[0x04] 128 Samples Per Second",
-    "[0x05] 250 Samples Per Second",
-    "[0x06] 475 Samples Per Second",
-    "[0x07] 860 Samples Per Second",
+   "[0x00] 8 Samples Per Second",
+   "[0x01] 16 Samples Per Second",
+   "[0x02] 32 Samples Per Second",
+   "[0x03] 64 Samples Per Second",
+   "[0x04] 128 Samples Per Second",
+   "[0x05] 250 Samples Per Second",
+   "[0x06] 475 Samples Per Second",
+   "[0x07] 860 Samples Per Second",
 };
 
 char ADC50_COMPAREMODE_REG_STR[][64] = {
-    "[0x00] Traditional",
-    "[0x01] Window",
+   "[0x00] Traditional",
+   "[0x01] Window",
 };
 
 char ADC50_COMPAREPOLARITY_REG_STR[][64] = {
-    "[0x00] Active low",
-    "[0x01] Active high",
+   "[0x00] Active low",
+   "[0x01] Active high",
 };
 
 char ADC50_COMPARELATCH_REG_STR[][64] = {
-    "[0x00] Non-latching",
-    "[0x01] Latching",
+   "[0x00] Non-latching",
+   "[0x01] Latching",
 };
 
 char ADC50_COMPAREQUE_REG_STR[][64] = {
-    "[0x00] Assert After 1st conversion",
-    "[0x01] Assert After 2nd conversion",
-    "[0x02] Assert After 4th conversion",
-    "[0x03] Comparator Disabled",
+   "[0x00] Assert After 1st conversion",
+   "[0x01] Assert After 2nd conversion",
+   "[0x02] Assert After 4th conversion",
+   "[0x03] Comparator Disabled",
 };
 
 
@@ -104,11 +104,11 @@ int adc50_init(mraa_i2c_context i2c1, int adc50_input)
 
    if (configbits != -1)
    {
-      adc50_uppack_configbits(&adc50_config_register, configbits);
-      if (adc50_input == ADC50_INPUT_JOY3D)
-         adc50_init_onboardstick1x3D(i2c1);
-      int configbits_after = adc50_read_config_register(i2c1);
-      adc50_dump_config(configbits_after);
+     adc50_uppack_configbits(&adc50_config_register, configbits);
+     if (adc50_input == ADC50_INPUT_JOY3D)
+        adc50_init_onboardstick1x3D(i2c1);
+     int configbits_after = adc50_read_config_register(i2c1);
+     adc50_dump_config(configbits_after);
    }
 
    return 0;
@@ -167,13 +167,13 @@ int adc50_testsample(mraa_i2c_context i2c1)
    printf("Sampling:\n");
    while (1)
    {
-      int a0 = adc50_sample_single_end(i2c1, 0);
-      int a1 = adc50_sample_single_end(i2c1, 1);
-      int a2 = adc50_sample_single_end(i2c1, 2);
+     int a0 = adc50_sample_single_end(i2c1, 0);
+     int a1 = adc50_sample_single_end(i2c1, 1);
+     int a2 = adc50_sample_single_end(i2c1, 2);
 
-      printf("   CHANNEL 0: %6d   CHANNEL 1: %6d  CHANNEL 2: %6d\r", a0, a1, a2);
-      fflush(stdout);
-      usleep(1000000/16);
+     printf("   CHANNEL 0: %6d   CHANNEL 1: %6d  CHANNEL 2: %6d\r", a0, a1, a2);
+     fflush(stdout);
+     usleep(1000000/16);
    }
    return 0;
 }

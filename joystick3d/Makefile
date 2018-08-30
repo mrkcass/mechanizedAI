@@ -1,8 +1,14 @@
 
 
-PROJ_NAME=onboardstick-1x3D
+PROJ_NAME=joystick3d
 
-OBJECT_FILES = main.o joystick.o wire.o i2c_interface.o adc50.o
+OBJECT_FILES = joystick3d_main.o 		\
+					joystick3d_stick.o 		\
+					mcu_motor_controller.o 	\
+					adc50.o 						\
+					wire.o 						\
+					i2c_interface.o 			\
+					somax.o
 
 SRC_DIR = src
 OBJ_DIR = build

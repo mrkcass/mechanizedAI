@@ -1,0 +1,49 @@
+#include "mcu_api.h"
+#include "mcu_errno.h"
+#include "string.h"
+
+#if 0
+/*
+* This program will blink GPIO 48, which connects to Edison Arduino board DIG 7
+*/
+void mcu_main()
+{
+	debug_print(DBG_DEBUG, "mcu dbg message print in DEBUG      level...\n");
+    debug_print(DBG_INFO, "mcu dbg message print in INFO level...\n");
+    //debug_print(DBG_WARNING, "mcu dbg message print in WARNING level...\n");
+    //debug_print(DBG_ERROR, "mcu dbg message print in ERROR level...\n");
+    //debug_print(DBG_FATAL, "mcu dbg message print in FATAL level...\n");
+    /* your configuration code starts here */
+    //gpio_setup(48, 1);  /* set GPIO 48 as output */
+    while (1)
+    {
+        //gpio_write(48, 1);
+        mcu_sleep(100);         /* sleep 1 second */
+        //gpio_write(48, 0);
+        //mcu_sleep(100);
+        debug_print(DBG_DEBUG, "mcu dbg message print in DEBUG      level...\n");
+    }
+}
+#endif
+
+void mcu_main()
+{
+    /* your configuration code starts here */
+    char buf[64];
+    int len;
+ 
+    while (1)       /* your loop code starts here */
+    {
+        do 
+        {
+            len = host_receive((unsigned char *)buf, 64);
+            mcu_sleep(10);
+        } while (len <= 0);
+        
+        if (strncmp(buf, "start", 5) == 0)
+        {
+            debug_print(DBG_INFO, "received start command!\n");
+            host_send((unsigned char*)"hello mcu\n", 10);
+        }
+    }
+}

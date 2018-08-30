@@ -13,16 +13,16 @@
 
 struct Wire
 {
-	Wire();
-	bool connectAnalog(int edisonPin);
-	bool connectDigital(int edisonPin, int direction, int mode);
-	void write(int level);
-	int read();
-	
-	int pin;
-	int direction;
-	mraa_aio_context aio;
-	mraa_gpio_context dio;
+   Wire();
+   bool connectAnalog(int edisonPin);
+   bool connectDigital(int edisonPin, int direction, int mode);
+   void write(int level);
+   int read();
+
+   int pin;
+   int direction;
+   mraa_aio_context aio;
+   mraa_gpio_context dio;
 };
 
 #endif
