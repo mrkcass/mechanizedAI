@@ -1,0 +1,209 @@
+#!/usr/bin/expect
+
+#
+# automation commands for intel edision using expect.
+# on ubuntu you may need to install expect with: sudo apt-get install expect
+#
+
+set wifi_ip "192.168.1.108"
+set usb_ip "192.168.2.15"
+set pass "ptarmigan"
+set login_dir "/root"
+set prompt "root@edison*#"
+
+set arg1 "[lindex $argv 0]"
+set arg2 "[lindex $argv 1]"
+set arg3 "[lindex $argv 2]"
+set arg4 "[lindex $argv 3]"
+
+
+if { "$arg1" == "help" || "$arg1" == "" } {
+   puts {
+
+      ./edsion_cmd.exp [wifi] Command
+
+      Description
+      --------------------------------------------------------------------
+      mechanizedAI Edsion automation script. See the top of the file for hard
+      coded configuration values.
+
+      Options
+      --------------------------------------------------------------------
+      [wifi] - Use a configured wifi ip address to connect to
+               an Edsion module.
+
+      Commands
+      --------------------------------------------------------------------
+      help   - Show this page.
+      login  - Login to the edsion module and change to working directory.
+      catmcu - Login to Edsion and monitor mcu debug output.
+      upload - Upload built mcu image to Edsion module.
+      reboot - Execute a controlled reboot in 1 seconds.
+
+      Combined commands can be executed on the same command line by
+      specifying the commands on in their logical order of execution.
+      --------------------------------------------------------------------
+      upload reboot
+   }
+   return 0
+}
+
+
+set edison_ip "$usb_ip"
+if { "$arg1" == "wifi" } {
+   set edison_ip "$wifi_ip"
+   set arg1 "$arg2"
+   set arg2 "$arg3"
+   set arg3 "$arg4"
+}
+
+
+set timeout 120
+
+if { "$arg1" == "make" } {
+   spawn ssh root@$edison_ip
+
+   expect {
+      timeout {
+         puts "Connection timed out"
+         exit 1
+      }
+
+      "yes/no" {
+         send "yes\r"
+         exp_continue
+      }
+
+      "assword:" {
+         send -- "$pass\r"
+         exp_continue
+      }
+
+      "$prompt" {
+         send "cd $login_dir/$arg2; make $arg3\r"
+      }
+   }
+   expect {
+      "$prompt" {
+         send "logout\r"
+      }
+   }
+}
+
+if { "$arg1" == "catmcu" } {
+   spawn ssh root@$edison_ip
+
+   expect {
+      timeout {
+         puts "Connection timed out"
+         exit 1
+      }
+
+      "yes/no" {
+         send "yes\r"
+         exp_continue
+      }
+
+      "assword:" {
+         send -- "$pass\r"
+         exp_continue
+      }
+
+      "$prompt" {
+         set timeout -1
+         send "cat /dev/ttymcu1\r"
+      }
+   }
+   expect {
+      "$prompt" {
+         send "logout\r"
+      }
+   }
+   return 0
+}
+
+if { "$arg1" == "login" } {
+   spawn ssh root@$edison_ip
+
+   expect {
+      timeout {
+         puts "Connection timed out"
+         exit 1
+      }
+
+      "yes/no" {
+         send "yes\r"
+         exp_continue
+      }
+
+      "assword:" {
+         send -- "$pass\r"
+         exp_continue
+      }
+
+      "$prompt" {
+         send "cd $login_dir\r"
+      }
+   }
+   expect {
+      "$prompt" {
+         set timeout -1
+         interact
+      }
+   }
+}
+
+if { "$arg1" == "upload" } {
+   spawn scp bin/intel_mcu.bin root@$edison_ip:/lib/firmware
+
+   expect {
+      timeout {
+         puts "Connection timed out"
+         exit 1
+      }
+
+      "yes/no" {
+         send "yes\r"
+         exp_continue
+      }
+
+      "assword:" {
+         send -- "$pass\r"
+         exp_continue
+      }
+   }
+   set arg1 $arg2
+   set arg2 $arg3
+}
+
+if { "$arg1" == "reboot" || "$arg2" == "reboot" } {
+   spawn ssh root@$edison_ip
+
+   expect {
+      timeout {
+         puts "Connection timed out"
+         exit 1
+      }
+
+      "yes/no" {
+         send "yes\r"
+         exp_continue
+      }
+
+      "assword:" {
+         send -- "$pass\r"
+         exp_continue
+      }
+
+      "$prompt" {
+         send "reboot\r"
+      }
+   }
+
+   expect {
+      "$prompt" {
+         send "logout\r"
+      }
+   }
+   return 0
+}
