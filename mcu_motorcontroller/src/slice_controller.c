@@ -65,9 +65,13 @@ static void slice_controller_init()
 //when the slices run function is called.
 static void slice_controller_distribute_msg(char * msg, char * reply)
 {
+   //char buff[64];
+   //mcu_snprintf(buff, 64, "slice controller msg: %s\n", msg);
+   //debug_print(DBG_INFO, buff);
    if (!main_sliced_msg(msg, reply))
    if (!motor_controller_sliced_msg(msg, reply))
       ;
+   //debug_print(DBG_INFO, "slice controller: distributed\n");
 }
 
 //Run the slices.

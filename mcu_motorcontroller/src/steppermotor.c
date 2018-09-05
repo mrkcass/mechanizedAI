@@ -13,7 +13,7 @@
 #define StepperMotor_POWER_ON 1
 #define StepperMotor_NUM_WIRE_STATES 8
 
-const bool WIRESTATEMAP_HALFSTEP[StepperMotor_NUM_WIRE_STATES][StepperMotor_WIRE_COUNT] =
+unsigned char WIRESTATEMAP_HALFSTEP[StepperMotor_NUM_WIRE_STATES][StepperMotor_WIRE_COUNT] =
 {
    //1-2 phase stepping
    // a+     a-     b+     b-
@@ -26,7 +26,7 @@ const bool WIRESTATEMAP_HALFSTEP[StepperMotor_NUM_WIRE_STATES][StepperMotor_WIRE
    { false, false, false, true },
    { true , false, false, true },
 };
-const bool WIRESTATEMAP_ONESTEP[StepperMotor_NUM_WIRE_STATES][StepperMotor_WIRE_COUNT] =
+unsigned char WIRESTATEMAP_ONESTEP[StepperMotor_NUM_WIRE_STATES][StepperMotor_WIRE_COUNT] =
 {
    //single phase stepping
    // a+     a-     b+     b-
@@ -39,7 +39,7 @@ const bool WIRESTATEMAP_ONESTEP[StepperMotor_NUM_WIRE_STATES][StepperMotor_WIRE_
    { false, true,  false, false },
    { false, false, false, true },
 };
-const bool WIRESTATEMAP_TWOPHASE[StepperMotor_NUM_WIRE_STATES][StepperMotor_WIRE_COUNT] =
+unsigned char WIRESTATEMAP_TWOPHASE[StepperMotor_NUM_WIRE_STATES][StepperMotor_WIRE_COUNT] =
 {
    //dual phase stepping
    // a+     a-     b+     b-
@@ -52,7 +52,7 @@ const bool WIRESTATEMAP_TWOPHASE[StepperMotor_NUM_WIRE_STATES][StepperMotor_WIRE
    { false, true, true, false },
    { false, true, false, true },
 };
-const bool WIRESTATEMAP_OFF[StepperMotor_WIRE_COUNT] =
+unsigned char WIRESTATEMAP_OFF[StepperMotor_WIRE_COUNT] =
 {
    false, false, false, false,
 };
@@ -61,7 +61,35 @@ static const int slowest = 20 + 12;
 static const int fastest = 0;
 static const int rate = 1;
 
-StepperMotor_StepperMotor(StepperMotor* motor, int pinApositive, int pinAnegaitve, int pinBpositive, int pinBnegaitve)
+void print_ttymcu1_oneintarg(char *format, int p1, int p2)
+{
+   char b[128];
+   mcu_snprintf(b, 128, format, p1, p2);
+   debug_print(DBG_INFO, b);
+}
+
+void print_ttymcu1_twointparg(char *format, const unsigned char * p1, int p2)
+{
+   char b[128];
+   mcu_snprintf(b, 128, format, p1, p2);
+   debug_print(DBG_INFO, b);
+}
+
+void print_ttymcu1_twointarg(char * format, int p1, int p2)
+{
+   char b[128];
+   mcu_snprintf(b, 128, format, p1, p2);
+   debug_print(DBG_INFO, b);
+}
+
+void print_ttymcu1_threeintarg(char *format, int p1, int p2, int p3)
+{
+   char b[128];
+   mcu_snprintf(b, 128, format, p1, p2, p3);
+   debug_print(DBG_INFO, b);
+}
+
+void StepperMotor_StepperMotor(StepperMotor* motor, int pinApositive, int pinAnegaitve, int pinBpositive, int pinBnegaitve)
 {
    StepperMotor_initWires(motor, pinApositive, pinAnegaitve, pinBpositive, pinBnegaitve);
    motor->power = StepperMotor_POWER_OFF;
@@ -71,12 +99,11 @@ StepperMotor_StepperMotor(StepperMotor* motor, int pinApositive, int pinAnegaitv
    motor->direction = StepperMotor_DIR_NONE;
    motor->motorState = StepperMotor_MOTORSTATE_STOPPED;
    motor->hold = false;
-   return motor;
 }
 
 void StepperMotor_initWires(StepperMotor* motor, int pinApositive, int pinAnegaitve, int pinBpositive, int pinBnegaitve)
 {
-   Wire_connect(&motor->wires[StepperMotor_WIRE_A_POSITVE], pinApositive, WIRE_DIRECTION_OUT);
+   Wire_connect(&motor->wires[StepperMotor_WIRE_A_POSITIVE], pinApositive, WIRE_DIRECTION_OUT);
    Wire_connect(&motor->wires[StepperMotor_WIRE_A_NEGATIVE], pinAnegaitve, WIRE_DIRECTION_OUT);
    Wire_connect(&motor->wires[StepperMotor_WIRE_B_POSITIVE], pinBpositive, WIRE_DIRECTION_OUT);
    Wire_connect(&motor->wires[StepperMotor_WIRE_B_NEGATIVE], pinBnegaitve, WIRE_DIRECTION_OUT);
@@ -84,20 +111,34 @@ void StepperMotor_initWires(StepperMotor* motor, int pinApositive, int pinAnegai
 
 void StepperMotor_initMotor(StepperMotor* motor)
 {
+    debug_print(DBG_INFO, "stepper motor init motor\n");
    //init motor winding A
-   Wire_write(&motor->wires[StepperMotor_WIRE_A_POSITVE], StepperMotor_LOW);
+   Wire_write(&motor->wires[StepperMotor_WIRE_A_POSITIVE], StepperMotor_LOW);
    Wire_write(&motor->wires[StepperMotor_WIRE_A_NEGATIVE], StepperMotor_LOW);
 
    Wire_write(&motor->wires[StepperMotor_WIRE_B_POSITIVE], StepperMotor_LOW);
    Wire_write(&motor->wires[StepperMotor_WIRE_B_NEGATIVE], StepperMotor_LOW);
 }
 
-void StepperMotor_sendState(StepperMotor* motor, const bool wiresStates[StepperMotor_WIRE_COUNT])
+void StepperMotor_sendState(StepperMotor* motor, unsigned char * wiresStates)
 {
-   Wire_write(&motor->wires[StepperMotor_WIRE_A_POSITVE], wiresStates[0] ? StepperMotor_HIGH :  StepperMotor_LOW);
-   Wire_write(&motor->wires[StepperMotor_WIRE_A_NEGATIVE], wiresStates[1] ? StepperMotor_HIGH : StepperMotor_LOW);
-   Wire_write(&motor->wires[StepperMotor_WIRE_B_POSITIVE], wiresStates[2] ? StepperMotor_HIGH : StepperMotor_LOW);
-   Wire_write(&motor->wires[StepperMotor_WIRE_B_NEGATIVE], wiresStates[3] ? StepperMotor_HIGH : StepperMotor_LOW);
+   if (WIRESTATEMAP_ONESTEP[motor->wireState][0])
+      Wire_write(&motor->wires[StepperMotor_WIRE_A_POSITIVE], StepperMotor_HIGH);
+   else
+      Wire_write(&motor->wires[StepperMotor_WIRE_A_POSITIVE], StepperMotor_LOW);
+   if (WIRESTATEMAP_ONESTEP[motor->wireState][1])
+      Wire_write(&motor->wires[StepperMotor_WIRE_A_NEGATIVE], StepperMotor_HIGH);
+   else
+      Wire_write(&motor->wires[StepperMotor_WIRE_A_NEGATIVE], StepperMotor_LOW);
+   if (WIRESTATEMAP_ONESTEP[motor->wireState][2])
+      Wire_write(&motor->wires[StepperMotor_WIRE_B_POSITIVE], StepperMotor_HIGH);
+   else
+      Wire_write(&motor->wires[StepperMotor_WIRE_B_POSITIVE], StepperMotor_LOW);
+   if (WIRESTATEMAP_ONESTEP[motor->wireState][3])
+      Wire_write(&motor->wires[StepperMotor_WIRE_A_NEGATIVE], StepperMotor_HIGH);
+   else
+      Wire_write(&motor->wires[StepperMotor_WIRE_A_NEGATIVE], StepperMotor_LOW);
+
 }
 
 void StepperMotor_incWireState(StepperMotor* motor)
@@ -109,16 +150,23 @@ void StepperMotor_incWireState(StepperMotor* motor)
       motor->wireState = 0;
 }
 
-bool StepperMotor_powerOn(StepperMotor* motor)
+void StepperMotor_motion_mode(StepperMotor * motor, int mode)
 {
-   bool didPowerOn = false;
+   motor->mode = mode;
+}
+
+unsigned char StepperMotor_powerOn(StepperMotor* motor)
+{
+   unsigned char didPowerOn = false;
    if (motor->power != StepperMotor_POWER_ON)
    {
+      debug_print(DBG_INFO, "stepper motor: power on\n");
       StepperMotor_initMotor(motor);
       motor->power = StepperMotor_POWER_ON;
       motor->direction = StepperMotor_DIR_NONE;
       motor->motorState = StepperMotor_MOTORSTATE_STOPPED;
-      motor->speed = slowest;
+      motor->speed = 0;
+      motor->speed_delay_per_step = slowest;
       motor->wireState = 0;
       motor->acceleration = 0;
       motor->hold = false;
@@ -127,15 +175,17 @@ bool StepperMotor_powerOn(StepperMotor* motor)
    return didPowerOn;
 }
 
-bool StepperMotor_powerOff(StepperMotor* motor)
+unsigned char StepperMotor_powerOff(StepperMotor* motor)
 {
-   bool didPowerOff = false;
+   unsigned char didPowerOff = false;
    if (motor->power != StepperMotor_POWER_OFF)
    {
+      debug_print(DBG_INFO, "stepper motor: power off\n");
       StepperMotor_sendState(motor, WIRESTATEMAP_OFF);
       motor->direction = StepperMotor_DIR_NONE;
+      motor->speed = 0;
       motor->motorState = StepperMotor_MOTORSTATE_STOPPED;
-      motor->speed = slowest;
+      motor->speed_delay_per_step = slowest;
       motor->wireState = 0;
       motor->acceleration = 0;
       motor->hold = false;
@@ -145,9 +195,11 @@ bool StepperMotor_powerOff(StepperMotor* motor)
    return didPowerOff;
 }
 
-bool StepperMotor_faster(StepperMotor* motor)
+unsigned char StepperMotor_faster(StepperMotor* motor)
 {
-   bool changed = false;
+   unsigned char changed = false;
+
+   debug_print(DBG_INFO, "steppermotor faster\n");
 
    if (StepperMotor_fasterOk(motor))
    {
@@ -157,17 +209,17 @@ bool StepperMotor_faster(StepperMotor* motor)
       else if (motor->acceleration == 0)
          motor->motorState = StepperMotor_MOTORSTATE_CRUISE;
       changed = true;
-      char b[128];
-      mcu_snprintf(b, 128, "steppermotor: faster [%d][%d]\n", motor->speed, motor->acceleration);
-      debug_print(DBG_INFO, b);
    }
 
+   debug_print(DBG_INFO, "steppermotor faster: done\n");
    return changed;
 }
 
-bool StepperMotor_slower(StepperMotor* motor)
+unsigned char StepperMotor_slower(StepperMotor* motor)
 {
-   bool changed = false;
+   unsigned char changed = false;
+
+   debug_print(DBG_INFO, "steppermotor slower\n");
 
    if (StepperMotor_slowerOk(motor))
    {
@@ -178,20 +230,20 @@ bool StepperMotor_slower(StepperMotor* motor)
       else if (motor->acceleration == 0)
          motor->motorState = StepperMotor_MOTORSTATE_CRUISE;
       changed = true;
-      char b[128];
-      mcu_snprintf(b, 128, "steppermotor: slower [%d][%d]\n", motor->speed, motor->acceleration);
-      debug_print(DBG_INFO, b);
+      //char b[128];
+      //mcu_snprintf(b, 128, "steppermotor: slower [%d][%d]\n", motor->speed_delay_per_step, motor->acceleration);
+      //debug_print(DBG_INFO, b);
    }
+
+   debug_print(DBG_INFO, "steppermotor slower: done\n");
 
    return changed;
 }
 
-bool StepperMotor_fasterOk(StepperMotor* motor)
+unsigned char StepperMotor_fasterOk(StepperMotor* motor)
 {
-   char b[128];
-   mcu_snprintf(b, 128, "steppermotor: fasterok [%d][%d]\n", motor->speed, motor->acceleration);
-   debug_print(DBG_INFO, b);
-   if (motor->motorState != StepperMotor_MOTORSTATE_STOPPED && motor->speed + motor->acceleration > fastest)
+   print_ttymcu1_threeintarg("steppermotor: fasterok [%d][%d][%d]\n", motor->motorState, motor->speed_delay_per_step, motor->acceleration);
+   if (motor->speed_delay_per_step + motor->acceleration > fastest)
    {
       debug_print(DBG_INFO, "steppermotor: fasterok : true\n");
       return true;
@@ -203,12 +255,12 @@ bool StepperMotor_fasterOk(StepperMotor* motor)
    }
 }
 
-bool StepperMotor_slowerOk(StepperMotor* motor)
+unsigned char StepperMotor_slowerOk(StepperMotor* motor)
 {
-   char b[128];
-   mcu_snprintf(b, 128, "steppermotor: slowerok [%d][%d]\n", motor->speed, motor->acceleration);
-   debug_print(DBG_INFO, b);
-   if (motor->motorState != StepperMotor_MOTORSTATE_STOPPED && motor->speed + motor->acceleration < slowest)
+   //char b[128];
+   //mcu_snprintf(b, 128, "steppermotor: slowerok [%d][%d]\n", motor->speed_delay_per_step, motor->acceleration);
+   //debug_print(DBG_INFO, b);
+   if (motor->motorState != StepperMotor_MOTORSTATE_STOPPED && motor->speed_delay_per_step + motor->acceleration < slowest)
    {
       debug_print(DBG_INFO, "steppermotor: slowerok : true\n");
       return true;
@@ -241,45 +293,75 @@ void StepperMotor_step(StepperMotor *motor, int _direction)
    }
 }
 
-bool StepperMotor_running(StepperMotor* motor)
+unsigned char StepperMotor_autostep_running(StepperMotor* motor)
 {
    return motor->motorState != StepperMotor_MOTORSTATE_STOPPED;
 }
 
-void StepperMotor_autostep_enable(StepperMotor* motor, int _direction)
+void StepperMotor_autostep_run(StepperMotor* motor, int _direction)
 {
-   debug_print(DBG_INFO, "steppermotor: run\n");
-   if (motor->mode == MOTORMODE_STEP)
-   {
-      debug_print(DBG_INFO, "steppermotor: auto step enabled\n");
+   debug_print(DBG_INFO, "autostep run\n");
+   if (motor->mode != MOTORMODE_AUTOSTEP)
       motor->mode = MOTORMODE_AUTOSTEP;
-      motor->speed = slowest;
-      motor->direction = _direction;
-      motor->motorState = StepperMotor_MOTORSTATE_CRUISE;
-      motor->wireState = 0;
-   }
+
+   motor->speed = 0;
+   motor->speed_delay_per_step = slowest;
+   motor->direction = _direction;
+   motor->motorState = StepperMotor_MOTORSTATE_STOPPED;
+   motor->wireState = 0;
+   motor->hold = true;
+   debug_print(DBG_INFO, "autostep runnning\n");
 }
 
-void StepperMotor_autostep_disable(StepperMotor* motor, bool hold)
+void StepperMotor_autostep_stop(StepperMotor* motor, unsigned char hold)
 {
-   debug_print(DBG_INFO, "steppermotor: stop\n");
+   debug_print(DBG_INFO, "autostep stop\n");
    if (motor->mode != MOTORMODE_AUTOSTEP)
-      return;
+      motor->mode = MOTORMODE_AUTOSTEP;
    if (motor->motorState != StepperMotor_MOTORSTATE_DECEL_STOP &&
       motor->motorState != StepperMotor_MOTORSTATE_STOPPED)
    {
       motor->hold = hold;
       motor->motorState = StepperMotor_MOTORSTATE_DECEL_STOP;
-      motor->acceleration = slowest - motor->speed;
-      char b[128];
-      mcu_snprintf(b, 128, "steppermotor: stop2 [%d][%d]\n", motor->speed, motor->acceleration);
-      debug_print(DBG_INFO, b);
+      motor->acceleration = slowest - motor->speed_delay_per_step;
    }
-   else if (motor->motorState == StepperMotor_MOTORSTATE_STOPPED && motor->hold == true)
+   else if (motor->motorState == StepperMotor_MOTORSTATE_STOPPED && hold == false && motor->hold == true)
    {
       StepperMotor_sendState(motor, WIRESTATEMAP_OFF);
       motor->hold = false;
    }
+   debug_print(DBG_INFO, "autostep stopped\n");
+}
+
+void StepperMotor_autostep_speed(StepperMotor *motor, int speed)
+{
+   print_ttymcu1_threeintarg("autostep speed [%d][%d][%d]\n", motor->mode, motor->speed, speed);
+   if (motor->mode != MOTORMODE_AUTOSTEP)
+      motor->mode = MOTORMODE_AUTOSTEP;
+
+   if (speed == 0 && motor->speed != 0)
+   {
+      StepperMotor_autostep_stop(motor, true);
+      motor->speed = speed;
+      debug_print(DBG_INFO, "steppermotor: stop\n");
+   }
+   else if (speed > motor->speed)
+   {
+      if (!StepperMotor_autostep_running(motor) || motor->direction == StepperMotor_DIR_CCW)
+         StepperMotor_autostep_run(motor, StepperMotor_DIR_CW);
+      if (speed > motor->speed)
+          StepperMotor_faster(motor);
+      motor->speed = speed;
+   }
+   else if (speed < motor->speed)
+   {
+      if (!StepperMotor_autostep_running(motor) || motor->direction == StepperMotor_DIR_CW)
+         StepperMotor_autostep_run(motor, StepperMotor_DIR_CCW);
+      if (speed < motor->speed)
+         StepperMotor_slower(motor);
+      motor->speed = speed;
+   }
+   debug_print(DBG_INFO, "autostep speed done\n");
 }
 
 void StepperMotor_toggleStepMode(StepperMotor* motor)
@@ -296,13 +378,10 @@ void StepperMotor_UpdateSpeed(StepperMotor* motor)
 {
    if (motor->motorState == StepperMotor_MOTORSTATE_ACCEL)
    {
-      char b[128];
-      mcu_snprintf(b, 128, "steppermotor: accel [%d][%d]\n", motor->speed, motor->acceleration);
-      debug_print(DBG_INFO, b);
-      motor->speed -= rate;
+      print_ttymcu1_twointarg("steppermotor: accel [%d][%d]\n", motor->speed_delay_per_step, motor->acceleration);
+      motor->speed_delay_per_step -= rate;
       motor->acceleration += rate;
-      mcu_snprintf(b, 128, "steppermotor: accel [%d][%d]\n", motor->speed, motor->acceleration);
-      debug_print(DBG_INFO, b);
+      print_ttymcu1_twointarg("steppermotor: accel2 [%d][%d]\n", motor->speed_delay_per_step, motor->acceleration);
       if (motor->acceleration == 0)
       {
          motor->motorState = StepperMotor_MOTORSTATE_CRUISE;
@@ -311,13 +390,10 @@ void StepperMotor_UpdateSpeed(StepperMotor* motor)
    }
    else if (motor->motorState == StepperMotor_MOTORSTATE_DECEL)
    {
-      char b[128];
-      mcu_snprintf(b, 128, "steppermotor: decel [%d][%d]\n", motor->speed, motor->acceleration);
-      debug_print(DBG_INFO, b);
-      motor->speed += rate;
+      print_ttymcu1_twointarg("steppermotor: decel [%d][%d]\n", motor->speed_delay_per_step, motor->acceleration);
+      motor->speed_delay_per_step += rate;
       motor->acceleration -= rate;
-      mcu_snprintf(b, 128, "steppermotor: decel2 [%d][%d]\n", motor->speed, motor->acceleration);
-      debug_print(DBG_INFO, b);
+      print_ttymcu1_twointarg("steppermotor: decel2 [%d][%d]\n", motor->speed_delay_per_step, motor->acceleration);
       if (motor->acceleration == 0)
       {
          motor->motorState = StepperMotor_MOTORSTATE_CRUISE;
@@ -326,12 +402,10 @@ void StepperMotor_UpdateSpeed(StepperMotor* motor)
    }
    else if (motor->motorState == StepperMotor_MOTORSTATE_DECEL_STOP)
    {
-      char b[128];
-      mcu_snprintf(b, 128, "steppermotor: decel_stop [%d][%d]\n", motor->speed, motor->acceleration);
-      debug_print(DBG_INFO, b);
+      print_ttymcu1_twointarg("steppermotor: decel_stop [%d][%d]\n", motor->speed_delay_per_step, motor->acceleration);
       if (motor->acceleration)
       {
-         motor->speed += rate;
+         motor->speed_delay_per_step += rate;
          motor->acceleration -= rate;
       }
       if (motor->acceleration == 0)
@@ -355,7 +429,7 @@ int StepperMotor_loop (StepperMotor* motor)
    {
       if (motor->direction != StepperMotor_DIR_NONE)
       {
-         if (last_time == 0 || time_ms() - last_time > motor->speed)
+         if (last_time == 0 || time_ms() - last_time > motor->speed_delay_per_step)
          {
             StepperMotor_sendState(motor, motor->wireStateMap[motor->wireState]);
             StepperMotor_incWireState(motor);

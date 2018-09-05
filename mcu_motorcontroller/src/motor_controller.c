@@ -4,7 +4,7 @@
 #include "stdlib.h"
 #include "string.h"
 
-int do_command (StepperMotor * motor_x, StepperMotor * motor_y, char * cmd, int cmd_len);
+int do_command (StepperMotor * motor_x, StepperMotor * motor_y, char * cmd);
 int nextRunDirectionX = StepperMotor_DIR_CW;
 int nextRunDirectionY = StepperMotor_DIR_CW;
 
@@ -28,9 +28,9 @@ StepperMotor motors[2];
 //    StepperMotor_StepperMotor(Y_AXIS_MOTOR, 44, 46, 48, 14);
 
 //    StepperMotor_powerOn(X_AXIS_MOTOR);
-//    StepperMotor_stop(X_AXIS_MOTOR, false);
+//    StepperMotor_autostep_stop(X_AXIS_MOTOR, false);
 //    StepperMotor_powerOn(Y_AXIS_MOTOR);
-//    StepperMotor_stop(Y_AXIS_MOTOR, false);
+//    StepperMotor_autostep_stop(Y_AXIS_MOTOR, false);
 //    debug_print (DBG_INFO, "Motor is running\n");
 //    while (1)
 //    {
@@ -61,12 +61,14 @@ void motor_controller_sliced_init()
 {
    StepperMotor motors[2];
    StepperMotor_StepperMotor(X_AXIS_MOTOR, 13, 165, 12, 183);
+   StepperMotor_motion_mode(X_AXIS_MOTOR, MOTORMODE_AUTOSTEP);
    //y-axis motor
    StepperMotor_StepperMotor(Y_AXIS_MOTOR, 44, 46, 48, 14);
+   StepperMotor_motion_mode(Y_AXIS_MOTOR, MOTORMODE_AUTOSTEP);
 
-   StepperMotor_powerOn(X_AXIS_MOTOR);
-   StepperMotor_powerOn(Y_AXIS_MOTOR);
-   debug_print(DBG_INFO, "motor controller is up\n");
+   //StepperMotor_powerOn(X_AXIS_MOTOR);
+   //StepperMotor_powerOn(Y_AXIS_MOTOR);
+   debug_print(DBG_INFO, "motor controller sliced init\n");
 }
 
 void motor_controller_sliced_msg(char * msg, char * reply)
@@ -83,18 +85,18 @@ void motor_controller_sliced_run()
 void motor_controller_power_on()
 {
    StepperMotor_powerOn(X_AXIS_MOTOR);
-   StepperMotor_stop(X_AXIS_MOTOR, false);
+   StepperMotor_autostep_stop(X_AXIS_MOTOR, false);
 
    StepperMotor_powerOn(Y_AXIS_MOTOR);
-   StepperMotor_stop(Y_AXIS_MOTOR, false);
+   StepperMotor_autostep_stop(Y_AXIS_MOTOR, false);
 }
 
 void motor_controller_power_off()
 {
-   StepperMotor_stop(X_AXIS_MOTOR, false);
+   StepperMotor_autostep_stop(X_AXIS_MOTOR, false);
    StepperMotor_powerOff(X_AXIS_MOTOR);
 
-   StepperMotor_stop(Y_AXIS_MOTOR, false);
+   StepperMotor_autostep_stop(Y_AXIS_MOTOR, false);
    StepperMotor_powerOff(Y_AXIS_MOTOR);
 }
 
@@ -103,51 +105,69 @@ int do_command (StepperMotor * motor_x, StepperMotor * motor_y, char * cmd)
    int processed = 0;
    static int direction;
 
-   #define SPEED_SIGN   7
-   #define SPEED_10X    8
-   #define SPEED_1X     9
+   #define SPEED_SIGN   6
+   #define SPEED_10X    7
+   #define SPEED_1X     8
 
-
-   //speed command format "speed[X|Y|Z][+|-]NN"
-   if (!processed && cmd[0] == 's' && cmd[4] == 'd')
+   if (!processed && cmd[0] == 'p' && cmd[1] == 'o' && cmd[2] == 'w' && cmd[6] == 'n')
    {
-      int speed = (10 * (cmd[SPEED_10X] - '0')) + (cmd[SPEED_1X] - '0');
-      if (cmd[SPEED_SIGN] == '-')
-         speed = -speed;
+      //poweron
+      motor_controller_power_on(motor_x);
+      motor_controller_power_on(motor_y);
+      processed = 1;
+   }
+   else if (!processed && cmd[0] == 'p' && cmd[1] == 'o' && cmd[2] == 'w' && cmd[6] == 'f')
+   {
+      //poweroff
+      motor_controller_power_off(motor_x);
+      motor_controller_power_off(motor_y);
+      processed = 1;
+   }
+   else if (!processed && cmd[0] == 's' && cmd[4] == 'd')
+   {
+      //speed command format "speed[X|Y|Z][+|-]NN"
+      int sign = cmd[SPEED_SIGN];
+      int x10 = cmd[SPEED_10X] - '0';
+      int x1 = cmd[SPEED_1X] - '0';
+      int speed = (10 * x10) + x1;
+      int signspeed = speed;
+      if (sign == '-')
+      {
+         signspeed = speed * -1;
+         mcu_delay(1);
+      }
 
       if (cmd[5] == 'X')
-         StepperMotor_autostep_speed(motor_x, speed);
+         StepperMotor_autostep_speed(motor_x, signspeed);
       else if (cmd[5] == 'Y')
-         StepperMotor_autostep_speed(motor_y, speed);
-      else if (cmd[5] == 'Z')
-         StepperMotor_autostep_speed(motor_x, speed);
-
+         StepperMotor_autostep_speed(motor_y, signspeed);
+      //else if (cmd[5] == 'Z')
+      //   StepperMotor_autostep_speed(motor_z, signspeed);
       processed = 1;
    }
-   else if (!processed && cmd_len == STOP_STR_LEN && !strncmp(cmd, STOP_STR, STOP_STR_LEN))
+   else if (!processed && cmd[0] == 's' && cmd[1] == 't' && cmd[2] == 'o' && cmd[3] == 'p')
    {
-      debug_print (DBG_INFO, "DO: stop command\n");
-      StepperMotor_stop(motor_x, false);
-      StepperMotor_stop(motor_y, false);
+      StepperMotor_autostep_stop(motor_x, false);
+      StepperMotor_autostep_stop(motor_y, false);
       processed = 1;
    }
-   else if (!processed && cmd_len == RUN_STR_LEN && !strncmp(cmd, RUN_STR, RUN_STR_LEN))
+   else if (!processed && cmd[0] == 'r' && cmd[1] == 'u' && cmd[2] == 'n')
    {
-      debug_print (DBG_INFO, "DO: run command\n");
       if (!direction)
       {
-         StepperMotor_run(motor_x, StepperMotor_DIR_CW);
-         StepperMotor_run(motor_y, StepperMotor_DIR_CW);
+         StepperMotor_autostep_run(motor_x, StepperMotor_DIR_CW);
+         StepperMotor_autostep_run(motor_y, StepperMotor_DIR_CW);
          direction = 1;
       }
       else
       {
-         StepperMotor_run(motor_x, StepperMotor_DIR_CCW);
-         StepperMotor_run(motor_y, StepperMotor_DIR_CCW);
+         StepperMotor_autostep_run(motor_x, StepperMotor_DIR_CCW);
+         StepperMotor_autostep_run(motor_y, StepperMotor_DIR_CCW);
          direction = 0;
       }
       processed = 1;
    }
+   /*
    else if (!processed && cmd_len == MODE_STR_LEN && !strncmp(cmd, MODE_STR, MODE_STR_LEN))
    {
       debug_print (DBG_INFO, "DO: mode command\n");
@@ -169,7 +189,7 @@ int do_command (StepperMotor * motor_x, StepperMotor * motor_y, char * cmd)
       StepperMotor_step (motor_y, StepperMotor_DIR_CCW);
       processed = 1;
    }
-
+   */
 
    return processed;
 }
