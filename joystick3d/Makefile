@@ -5,6 +5,7 @@ PROJ_NAME=joystick3d
 OBJECT_FILES = joystick3d_main.o 		\
 					joystick3d_stick.o 		\
 					mcu_motor_controller.o 	\
+					atom_motor_controller.o \
 					adc50.o 						\
 					wire.o 						\
 					i2c_interface.o 			\

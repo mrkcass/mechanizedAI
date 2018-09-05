@@ -17,32 +17,12 @@ bool Wire::connectAnalog(int edisonPin)
 
 bool Wire::connectDigital(int gpio, int _direction, int mode)
 {
-   dio = mraa_gpio_init(5);
+   dio = mraa_gpio_init_raw(gpio);
    direction = _direction;
    if (dio != NULL)
    {
-      if (direction > WIRE_DIRECTION_OUT)
-         mraa_gpio_dir(dio, MRAA_GPIO_OUT);
-      else
-         mraa_gpio_dir(dio, MRAA_GPIO_IN);
-
-      if (mode == WIRE_MODE_STRONG)
-         mraa_gpio_mode(dio, MRAA_GPIO_STRONG);
-      else if (mode == WIRE_MODE_PULLUP)
-         mraa_gpio_mode(dio, MRAA_GPIO_PULLUP);
-      else if (mode == WIRE_MODE_PULLDOWN)
-         mraa_gpio_mode(dio, MRAA_GPIO_PULLDOWN);
-
-      if (mraa_gpio_use_mmaped(dio, 1) != MRAA_SUCCESS)
-      {
-         fprintf(stdout, "mmapped access to gpio %d not supported, falling back to normal mode\n", gpio);
-      }
       pin = gpio;
-      if (direction == WIRE_DIRECTION_IN)
-      {
-         int value = mraa_gpio_read(dio);
-         printf("Initalized GPIO[%d]: current value = %d\n", gpio, value);
-      }
+      mraa_gpio_dir(dio, MRAA_GPIO_OUT);
       return true;
    }
    else
@@ -54,7 +34,6 @@ bool Wire::connectDigital(int gpio, int _direction, int mode)
 
 void Wire::write(int level)
 {
-   if (direction == WIRE_DIRECTION_OUT)
       mraa_gpio_write(dio, level);
 }
 

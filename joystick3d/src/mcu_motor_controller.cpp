@@ -8,12 +8,13 @@
 
 #include "mcu_motor_controller.h"
 
-static char POWER_ON_CMD[]  =  "run           \n";
-static char POWER_OFF_CMD[] =  "stop          \n";
-static char SPEED_CMD[] = "speed%c%c%2d      \n";
+static char POWER_ON_CMD[]  =  "poweron       \n";
+static char POWER_OFF_CMD[] =  "poweroff      \n";
+static char SPEED_CMD[] = "speed%c%s%02d      \n";
 
-static char NEGATIVE_SPEED[] = "-";
-static char POSITIVE_SPEED[] = "+";
+static char ZERO_SPEED[]      = "+";
+static char NEGATIVE_SPEED[]  = "-";
+static char POSITIVE_SPEED[]  = "+";
 
 int mcu_send(char *msg);
 
@@ -39,19 +40,21 @@ void McuMotorController::PowerOff()
 void McuMotorController::MotorSpeed(int motor, int speed)
 {
    char speed_cmd[16];
-   char motor_id[3] = "XYZ";
-   char speeds[3] = "0123456789";
+   char motor_id[4] = "XYZ";
 
    if (motor < 0 || motor > MCUMTR_NUM_MOTORS)
       return;
    if (speed < -MCUMTR_MAX_MOTOR_SPEED || speed > MCUMTR_MAX_MOTOR_SPEED)
       return;
 
-   if (speed < 0)
-      sprintf(speed_cmd, SPEED_CMD, motor_id[motor], NEGATIVE_SPEED, speeds[-speed]);
+   if (speed == 0)
+      sprintf(speed_cmd, SPEED_CMD, motor_id[motor], ZERO_SPEED, 0);
+   else if (speed < 0)
+      sprintf(speed_cmd, SPEED_CMD, motor_id[motor], NEGATIVE_SPEED, -speed);
    else
-      sprintf(speed_cmd, SPEED_CMD, motor_id[motor], POSITIVE_SPEED, speeds[speed]);
+      sprintf(speed_cmd, SPEED_CMD, motor_id[motor], POSITIVE_SPEED, speed);
 
+   printf("McuMotorController::MotorSpeed: %s\n", speed_cmd);
    mcu_send(speed_cmd);
 }
 

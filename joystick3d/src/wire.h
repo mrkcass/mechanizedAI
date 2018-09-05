@@ -11,8 +11,9 @@
 #define WIRE_MODE_PULLDOWN 2
 
 
-struct Wire
+class Wire
 {
+   public:
    Wire();
    bool connectAnalog(int edisonPin);
    bool connectDigital(int edisonPin, int direction, int mode);

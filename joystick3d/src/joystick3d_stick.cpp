@@ -122,27 +122,35 @@ int Joystick::run()
 {
    if (load_calibration())
       return 1;
+   int samples_per_sec = 180;
    int * last = new int[num_axis+1];
    int current;
-   int warm_up_counter = 0;
-   int warmed_up = 0;
+   int *debounce = new int[num_axis + 1];
+   int debounce_threshold = 1;
    while (1)
    {
-      for (int axis = 0; axis < num_axis; axis++)
+      for (int axis = 0; axis <= num_axis; axis++)
       {
-         current = calc_power(axis);
-         if (warm_up_counter >= warmed_up && last[axis] != current)
-            changed_cb(axis, current);
-         else if (warm_up_counter < warmed_up)
-            warm_up_counter++;
+         if (axis == num_axis)
+            current = this->button_sampler();
+         else
+            current = calc_power(axis);
+         if (last[axis] == current)
+         {
+            if (debounce[axis] == debounce_threshold)
+            {
+               debounce[axis]++;
+               changed_cb(axis, current);
+            }
+            else
+               debounce[axis]++;
+         }
+         else
+            debounce[axis] = 0;
 
          last[axis] = current;
       }
-      int curr_btn = this->button_sampler();
-      if (curr_btn != last[num_axis])
-         changed_cb(num_axis, curr_btn);
-      last[num_axis] = curr_btn;
-      usleep(1000000 / 30);
+      usleep(1000000 / samples_per_sec);
    }
    return 0;
 }

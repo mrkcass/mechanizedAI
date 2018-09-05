@@ -23,14 +23,14 @@ None
 
 **Pin Map**
 
-|JH-D400 Pin	| Edison Mini-Breakout Pin |
+|JH-D400 Pin	| Edison Mini-Breakout Pin  |
 |------------- | ------------------------- |
 | VIN          | 5.0 POWER                 |
 | GND          | GND                       |
-| JOYPAN       | I2C1	ADC50-A1           |
-| JOYROTATE    | I2C1	ADC50-A2           |
-| JOYTILT      | I2C1	ADC50-A3           |
-| JOYB         | GP135                     |
+| JOYPAN       | I2C1-1, ADC50-A1          |
+| JOYROTATE    | I2C1-1, ADC50-A2          |
+| JOYTILT      | I2C1-1, ADC50-A3          |
+| JOYB         | I2C1-1, ADC50-A3          |
 &nbsp;
 
 **Joy-Stick map**
@@ -52,4 +52,13 @@ Looking down on the stick with max power to the right and min power to the left
 
 	JOYROTATE	STICK_CLOCK < STICK_CENTER  < STICK_COUNTERCLK
 
-	JOYB	PRESSED = LOW
+	JOYB	PRESSED = HIGH
+
+&nbsp;
+
+|Driver Option	| Description  |
+|------------- | ------------------------- |
+| run          | start the joystick for normal operation   |
+| calibrate    | start calibration function |
+| sample-raw   | test the values returned by the adc  |
+| sample-pwr   | test converted adc samples as power levels  |
