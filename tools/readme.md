@@ -16,6 +16,7 @@ Called at power on to initialize GPIO pins.
 <span style="font-size:larger;">**turn_motor.sh**</span>
 
 Move one of the 4 camera gimbal motors.
+
 | Option	      | Description  |
 |------------- | ------------------------- |
 | help         | Show help.
@@ -29,6 +30,7 @@ Move one of the 4 camera gimbal motors.
 <span style="font-size:larger;">**edison_cmd.exp**</span>
 
 Tool to automate host <-> communication.
+
 | Option	      | Description  |
 |------------- | ------------------------- |
 | help   | Show help.
