@@ -43,8 +43,8 @@
 #define GPIO_MTRROTATE_IN3  47
 #define GPIO_MTRROTATE_IN4  49
 
-#define IDLE_PWM_RATE         3UL
-#define POWER_ON_INTERVAL_MS  5000
+#define IDLE_PWM_RATE         4UL
+#define POWER_ON_INTERVAL_MS  500
 
 
 extern void slice_controller_run();
@@ -67,7 +67,7 @@ int motor_speed_delay[NUM_POWER_LEVELS][NUM_MOTORS] =
    { 8 * scale,  8 * scale,  8 * scale},
 };
 unsigned long motor_countdowntimer[NUM_MOTORS] = {2000, 2000, 2000};
-unsigned long motor_idle_pwm_rate[NUM_MOTORS] = {IDLE_PWM_RATE*2, IDLE_PWM_RATE*2, IDLE_PWM_RATE*10};
+unsigned long motor_idle_pwm_rate[NUM_MOTORS] = {IDLE_PWM_RATE, IDLE_PWM_RATE, IDLE_PWM_RATE/2};
 unsigned long motor_idle_pwm[NUM_MOTORS] = {0, 0, 0};
 unsigned long motor_countdowntimes_lasttime[NUM_MOTORS] = {0, 0, 0};
 struct Wire gpio_lines[12];
@@ -213,8 +213,9 @@ void change_motor_phase(int motor_id)
       if (motor_idle_pwm[motor_id] % motor_idle_pwm_rate[motor_id] == 0)
       {
          restore_phase = motor_phase[motor_id];
-         motor_phase[motor_id] = -1;
+         motor_phase[motor_id] = PHASE_OFF;
       }
+      motor_idle_pwm[motor_id]++;
    }
 
    cpu_to_mx1508(motor_id);
@@ -245,7 +246,7 @@ void move_motors()
 {
    move_motor(MOTOR_PAN);
    move_motor(MOTOR_TILT);
-   //move_motor(MOTOR_ROTATE);
+   move_motor(MOTOR_ROTATE);
 }
 
 int mcu_process_message(char *msg, char *reply)
@@ -262,19 +263,16 @@ int mcu_process_message(char *msg, char *reply)
       power_state[MOTOR_ROTATE] = POWER_ON;
       printf("POWER_ON: MTR_ROTATE\n");
       usleep(POWER_ON_INTERVAL_MS * 1000);
-      printf("POWER_ON: MTR_TILT\n");
+
       power_state[MOTOR_TILT] = POWER_ON;
+      printf("POWER_ON: MTR_TILT\n");
       usleep(POWER_ON_INTERVAL_MS * 1000);
 
-      //power_state[MOTOR_PAN] = POWER_ON_WAIT;
       power_state[MOTOR_PAN] = POWER_ON;
       printf("POWER_ON: MTR_PAN\n");
-      // usleep(100);
-      // power_state[MOTOR_TILT] = POWER_ON_WAIT;
-      // power_state[MOTOR_PAN] = POWER_ON;
-      // usleep(100);
-      // power_state[MOTOR_TILT] = POWER_ON;
       usleep(POWER_ON_INTERVAL_MS * 1000);
+
+      printf("motors powered on\n");
 
       processed = 1;
    }

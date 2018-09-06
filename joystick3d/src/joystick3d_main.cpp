@@ -219,14 +219,12 @@ void joy3d_notify_motor_controller(int motor, int speed)
          sprintf(speed_cmd, POWER_OFF_CMD);
          stick_enabled = false;
          mcu_process_message(speed_cmd, NULL);
-         printf("McuMotorController::MotorSpeed: %s\n", speed_cmd);
       }
       else
       {
          printf("JOY3D: stick enabled. powering on motors\n");
          sprintf(speed_cmd, POWER_ON_CMD);
          mcu_process_message(speed_cmd, NULL);
-         printf("McuMotorController::MotorSpeed: %s\n", speed_cmd);
          stick_enabled = true;
       }
 
@@ -239,7 +237,6 @@ void joy3d_notify_motor_controller(int motor, int speed)
          sprintf(speed_cmd, SPEED_CMD, motor_id[motor], NEGATIVE_SPEED, -speed);
       else
          sprintf(speed_cmd, SPEED_CMD, motor_id[motor], POSITIVE_SPEED, speed);
-      printf("McuMotorController::MotorSpeed: %s\n", speed_cmd);
       mcu_process_message(speed_cmd, NULL);
    }
 }

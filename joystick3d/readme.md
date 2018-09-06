@@ -25,8 +25,34 @@ The minima, maxima and center are modeled as ranges which are derived from calib
 debounced independently. Currently the axis are sampled at 180 samples per second per axis and
 debounced with a window size of 2 samples per axis. I have noticed no spurious output what so ever.
 #
+**Operation**
+
+JOY3D has three axis of control and a single momentary on button. The stick driver
+is loaded by a sytemd at boot.
+
+To power on the motor, press the JOY3D button. Power on is power sequenced at takes
+1.5 seconds for all three motors. You should here the motor hum when it is powered
+on and ready for motion.
+
+Looking down on Somax and from behind the stick.
+* Pan the gimbal clockwise by pushing the stick to the right.
+* Pan the gimbal counter-clockwise by pushing the stick left.
+* Tilt the gimbal up by pulling back on the stick.
+* Tilt the gimbal down by pushing the stick forward.
+* Rotate the gimbal clockwise when, looking at the back of the gimabl, by twisting the handle clockwise.
+* Rotate the gimbal counter-clockwise when looking at the back of the gimabl, by twisting the handle counter-clockwise.
+
+Power the gimbal motors down by again pressing the momentary on button. There
+is no delay when powering off the motors and so will happen immediately.
+#
 **Status**
 
+* September/06/2018 - Motors are fixed, No more brown out! All motors are now enabled.
+  A service was also added to start the joystick at boot. The problem was fixed by
+  adjusting the voltage going the pan and tilt motors. these motors should only
+  be provided with 3.8 volts, they were getting 6 volts. This looked a lot like an
+  under volt condition becuase the voltage draw through the motor voltage regulator
+  was over heating and shutting down when the watts got to high.
 * Sep/05/2018 - Stick is working and is controlling the motors.
   I have non-stick code in the driver that will soon be moved to a soon to be
   created lib and include directory. With current motors, the 18 watt power supply
