@@ -73,19 +73,7 @@ motor_p()
    turn_motor $in1 $in2 $in3 $in4 $phase
 }
 
-motor_l()
-{
-   local phase="$1"
-
-   local in1="182"
-   local in2="114"
-   local in3="129"
-   local in4="131"
-
-   turn_motor $in1 $in2 $in3 $in4 $phase
-}
-
-motor_u()
+motor_t()
 {
    local phase="$1"
 
@@ -101,22 +89,23 @@ motor_r()
 {
    local phase="$1"
 
-   local in1="15"
+   local in1="134"
    local in2="45"
    local in3="47"
    local in4="49"
+
 
    turn_motor $in1 $in2 $in3 $in4 $phase
 }
 
 if [[ "$1" == "" || "$1" == "h" || "$1" == "help" || "$1" == "--help" ]]; then
    echo " "
-   echo "   turn_motor.sh [p|u|l|r|off] [f|r] NNN DDD delay"
+   echo "   turn_motor.sh [p|t|r|off] [f|r] NNN DDD delay"
    echo " "
    echo "   turn a CAMD-stepper motor along a given axis."
    echo " "
-   echo "   [p|u|l|r|off"
-   echo "      motor to move pan, tilt-upper, tilt-lower, or rotate."
+   echo "   [p&r&t]|off"
+   echo "      motor to move pan, tilt, or rotate."
    echo "       off will power down all motors."
    echo "   [f|r|p]"
    echo "      direction of step,forward of reverse. change to a phase"
@@ -129,76 +118,69 @@ if [[ "$1" == "" || "$1" == "h" || "$1" == "help" || "$1" == "--help" ]]; then
    exit
 fi
 
-axis=$1
 phase_delay=$4
 if [[ "$phase_delay" == "" ]]; then
-   if [[ "$axis" == "p" || "$axis" == "u" ]]; then
-      phase_delay="1600"
-   elif [[ "$axis" == "r" ]]; then
-      phase_delay="1600"
-   fi
+   phase_delay="500"
 fi
+axis=$1
 
 if [[ "$1" == "off" ]]; then
    motor_p off
-   motor_l off
-   motor_u off
+   motor_t off
    motor_r off
-else
-   if [[ "$2" == "p" ]]; then
-      motor_$axis $3
-   fi
-   if [[ "$2" == "f" ]]; then
-      steps_taken=0
-      while (( $steps_taken < $3 )); do
-         usleep $phase_delay
-         motor_$axis 1
-         ((steps_taken++))
-         if (( $steps_taken == $3 )); then
-            break
-         fi
-         usleep $phase_delay
-         motor_$axis 2
-         ((steps_taken++))
-         if (( $steps_taken == $3 )); then
-            break
-         fi
-         usleep $phase_delay
-         motor_$axis 3
-         ((steps_taken++))
-         if (( $steps_taken == $3 )); then
-            break
-         fi
-         usleep $phase_delay
-         motor_$axis 4
-         ((steps_taken++))
-      done
-   fi
-   if [[ "$2" == "r" ]]; then
-      steps_taken=0
-      while (( $steps_taken < $3 )); do
-         usleep $phase_delay
-         motor_$axis 4
-         ((steps_taken++))
-         if (( $steps_taken == $3 )); then
-            break
-         fi
-         usleep $phase_delay
-         motor_$axis 3
-         ((steps_taken++))
-         if (( $steps_taken == $3 )); then
-            break
-         fi
-         usleep $phase_delay
-         motor_$axis 2
-         ((steps_taken++))
-         if (( $steps_taken == $3 )); then
-            break
-         fi
-         usleep $phase_delay
-         motor_$axis 1
-         ((steps_taken++))
-      done
-   fi
-   motor_$axis off
+fi
+if [[ "$2" == "p" ]]; then
+   motor_$axis $3
+fi
+if [[ "$2" == "f" ]]; then
+   steps_taken=0
+   while (( $steps_taken < $3 )); do
+      usleep $phase_delay
+      motor_$axis 1
+      ((steps_taken++))
+      if (( $steps_taken == $3 )); then
+         break
+      fi
+      usleep $phase_delay
+      motor_$axis 2
+      ((steps_taken++))
+      if (( $steps_taken == $3 )); then
+         break
+      fi
+      usleep $phase_delay
+      motor_$axis 3
+      ((steps_taken++))
+      if (( $steps_taken == $3 )); then
+         break
+      fi
+      usleep $phase_delay
+      motor_$axis 4
+      ((steps_taken++))
+   done
+fi
+if [[ "$2" == "r" ]]; then
+   steps_taken=0
+   while (( $steps_taken < $3 )); do
+      usleep $phase_delay
+      motor_$axis 4
+      ((steps_taken++))
+      if (( $steps_taken == $3 )); then
+         break
+      fi
+      usleep $phase_delay
+      motor_$axis 3
+      ((steps_taken++))
+      if (( $steps_taken == $3 )); then
+         break
+      fi
+      usleep $phase_delay
+      motor_$axis 2
+      ((steps_taken++))
+      if (( $steps_taken == $3 )); then
+         break
+      fi
+      usleep $phase_delay
+      motor_$axis 1
+      ((steps_taken++))
+   done
 fi

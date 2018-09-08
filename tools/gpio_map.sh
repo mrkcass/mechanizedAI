@@ -1,45 +1,45 @@
 #!/bin/bash
 
 somax_pin_map_p3="
-J17-1   GP182         PWM2           MTRTILTL-IN1
+J17-1   GP182         PWM2         MTRFOLD-IN1
 J17-2   NC
 J17-3   NC
 J17-4   VIN           -              PSU12V-VOUT
-J17-5   UART2-TX      -
+J17-5   GP135         UART2-TX       LVL50-3   JOYB
 J17-6   RCVR-MODE     -
 J17-7   GP27          I2C6-SCL       LVL33L-7 IMUCAMD-SCL
-J17-8   GP20          I2C1-SDA       LVL33U-8 IMUFRAME-SDA LVL50A-2 ADC50 JOY3D-BXYZ
+J17-8   GP20          I2C1-SDA       LVL33U-8 IMUFRAME-SDA LVL50A-2 ADC50 JOY3D-XYZ
 J17-9   GP28          I2C6-SDA       LVL33L-6 IMUCAMD-SDA
 J17-10  GP111         SPI5-CS1       LVL33L-5 OLEDFRAME-CS
-J17-11  GP109         SPI5-CLK       LVL33L-2 OLEDFRAME-CLK OLEDCAMD-CLK
-J17-12  GP115         SPI5-TX        LVL33L-1 OLEDFRAME-DIN OLEDCAMD-DIN
+J17-11  GP109         SPI5-CLK       LVL33L-2 OLEDFRAME-CLK
+J17-12  GP115         SPI5-TX        LVL33L-1 OLEDFRAME-DIN
 J17-13  OSCCLK-OUT    -
-J17-14  GP128         UART1-CTS      LVL33L-4 OLEDFRAME-DC OLEDCAMD-DC
+J17-14  GP128         UART1-CTS      LVL33L-4 OLEDFRAME-DC
 
 J18-1   GP13          PWM1           MTRPAN-IN1
 J18-2   GP165         -              MTRPAN-IN2
 J18-3   PWRBTN        -
 J18-4   MSIC-SLPCLK   -
 J18-5   VBAT-BKUP     -
-J18-6   GP19          I2C1-SCL       LVL33U-7 IMUFRAME-SCL LVL50A-1 ADC50 JOY3D-BXYZ
+J18-6   GP19          I2C1-SCL       LVL33U-7 IMUFRAME-SCL LVL50A-1 ADC50 JOY3D-XYZ
 J18-7   GP12          PWM0           MTRPAN-IN3
 J18-8   GP183         PWM3           MTRPAN-IN4
 J18-9   NC            -
 J18-10  GP110         SPI5-FS0
-J18-11  GP114         SPI5-RXD       MTRTILTL-IN4
-J18-12  GP129         UART1-RTS      MTRTILTL-IN2
+J18-11  GP114         SPI5-RXD
+J18-12  GP129         UART1-RTS      MTRFOLD-IN2
 J18-13  GP130         UART1-RX       LVL33U-3 OLEDFRAME-RST
 J18-14  FW-RCVR       -
 
 J19-1   NC            -
 J19-2   V1P80         -              LVL33U LVL33L LVL50
 J19-3   GND           -              PSU12V-GND
-J19-4   GP44          -              MTRTILTU-IN1
-J19-5   GP46          -              MTRTILTU-IN2
-J19-6   GP48          -              MTRTILTU-IN3
+J19-4   GP44          -              MTRTILT-IN1
+J19-5   GP46          -              MTRTILT-IN2
+J19-6   GP48          -              MTRTILT-IN3
 J19-7   RESET         -
-J19-8   GP131         UART1-TX       MTRTILTL-IN3
-J19-9   GP14          -              MTRTILTU-IN4
+J19-8   GP131         UART1-TX       MTRFOLD-IN3
+J19-9   GP14          -              MTRTILT-IN4
 J19-10  GP40          I2S2-CLK       MICARRAY-SCK
 J19-11  GP43          I2S2-TXD       MICARRAY-TXD
 J19-12  GP77          SD-CDN
@@ -48,11 +48,11 @@ J19-14  GP83          SD-DAT3
 
 J20-1   VSYS          -
 J20-2   V3P30         -
-J20-3   UART2-RX       -
+J20-3   GP134         UART2-RX       MTRROTATE-IN1
 J20-4   GP45          -              MTRROTATE-IN2
 J20-5   GP47          -              MTRROTATE-IN3
 J20-6   GP49          -              MTRROTATE-IN4
-J20-7   GP15          -              MTRROTATE-IN1
+J20-7   GP15          -              MTRFOLD-IN4
 J20-8   GP84          SD-CLK-FB
 J20-9   GP42          I2S2-RXD       MICARRAY-SD
 J20-10  GP41          I2S2-FS        MICARRAY-WS
