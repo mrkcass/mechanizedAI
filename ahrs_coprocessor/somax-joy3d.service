@@ -1,0 +1,13 @@
+[Unit]
+Description=Initialize Somax 3D joystick
+After=somax.service
+
+[Service]
+TimeoutStartSec=5
+ExecStart=/root/joystick3d/joystick3d run
+Environment="HOME=/home/root"
+WorkingDirectory=/root/joystick3d
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
