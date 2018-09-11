@@ -36,6 +36,9 @@ int ahrscop_open_frame();
 void ahrscop_close();
 void ahrscop_display_help();
 void ahrscop_info();
+void ahrscop_test();
+
+void test_callback(int device_id, int axis, int value);
 
 
 
@@ -61,12 +64,13 @@ int main(int argc, char *argv[])
 
    if (!return_code && somax_commandline_has_option(argc, argv, "info"))
       ahrscop_info();
-   else if (!return_code && somax_commandline_has_option(argc, argv, "test-camd"))
-      ahrs_test(AHRS_ID_CAMD);
-   else if (!return_code && somax_commandline_has_option(argc, argv, "test-frame"))
-      ahrs_test(AHRS_ID_FRAME);
+   else if (!return_code && somax_commandline_has_option(argc, argv, "test"))
+   {
+      ahrscop_info();
+      ahrs_test();
+   }
    else if (!return_code && somax_commandline_has_option(argc, argv, "sample-pwr"))
-      ahrs_run();
+      ahrs_run(test_callback);
 
    ahrscop_close();
    mraa_deinit();
@@ -127,4 +131,25 @@ void ahrscop_info()
 {
    ahrs_info(ahrs_camd);
    ahrs_info(ahrs_frame);
+}
+
+void ahrscop_test()
+{
+   ahrs_test();
+}
+
+void test_callback(int device_id, int axis, int value)
+{
+   static int current[AHRS_NUM_DEVICES + 1][AHRS_NUM_AXIS];
+
+   current[device_id][axis] = value;
+
+//    printf("FPAN[%3d.%2d] FTILT[%3d.%2d] FROTATE[%3d.%2d] CPAN[%3d.%2d] CTILT[%3d.%2d] CROTATE[%3d.%2d]\r",
+//           current[2][0] / 100, current[2][0] - ((current[2][0] / 100) * 100),
+//           current[2][1] / 100, current[2][1] - ((current[2][1] / 100) * 100),
+//           current[2][2] / 100, current[2][2] - ((current[2][2] / 100) * 100),
+//           current[1][0] / 100, current[1][0] - ((current[1][0] / 100) * 100),
+//           current[1][1] / 100, current[1][1] - ((current[1][1] / 100) * 100),
+//           current[1][2] / 100, current[1][2] - ((current[1][2] / 100) * 100));
+//    fflush(stdout);
 }

@@ -29,38 +29,11 @@ int i2c_dev_write_bytes(i2c_context i2c, uint8_t *bytes, int num_bytes);
 
 int i2c_reg_read_byte(i2c_context i2c, uint8_t register_id);
 int i2c_reg_read_word(i2c_context i2c, u_int8_t register_id);
-int i2c_reg_read_many(i2c_context i2c, uint8_t *bytes, int num_registers);
+int i2c_reg_read_many(i2c_context i2c, uint8_t first_register_id, uint8_t *buffer, int num_registers);
 int i2c_reg_write_byte(i2c_context i2c, uint8_t register_id, uint8_t byte);
 int i2c_reg_write_bits(i2c_context i2c, uint8_t register_id, uint8_t bit0, uint8_t num_bits, uint8_t bits);
 int i2c_reg_write_word(i2c_context i2c, u_int8_t register_id, uint16_t word);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// int write_or_byte(i2c_context i2c, uint8_t register_id, uint8_t value);
-
-// int i2c_reg_write_byte(i2c_context i2c, uint8_t register_id, uint8_t value);
-// int i2c_reg_write_orbyte(i2c_context i2c, uint8_t register_id, uint8_t value);
-
-// int write_or_byte(i2c_context i2c, uint8_t register_id, uint8_t value);
-// int read_byte(i2c_context i2c, uint8_t * byte);
-// int read_bytes(i2c_context i2c, uint8_t register_id, uint8_t * buffer, int num_bytes);
 
 void debug(int argc, char ** argv);
 

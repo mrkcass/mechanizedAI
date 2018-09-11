@@ -16,7 +16,7 @@
 #define BNO_PWR_MODE_LOW         0x01
 #define BNO_PWR_MODE_OFF         0x02
 
-#define BNO_REG_OPR_MODE         0x3E
+#define BNO_REG_OPR_MODE         0x3D
 #define BNO_OPR_MODE_MASK        0b00001111
 #define BNO_OPR_MODE_SHIFT       0
 #define BNO_OPR_MODE_CONFIG      0x00
@@ -50,11 +50,31 @@
 #define BNO_DATA_FORMAT_CCINC    0b00000000
 #define BNO_DATA_FORMAT_CCDEC    0b10000000
 
+#define BNO_REG_EULER_HEADING_MSB   0x1B
+#define BNO_REG_EULER_HEADING_LSB   0x1A
+#define BNO_REG_EULER_PITCH_MSB     0x1F
+#define BNO_REG_EULER_PITCH_LSB     0x1E
+#define BNO_REG_EULER_ROLL_MSB      0x1F
+#define BNO_REG_EULER_ROLL_LSB      0x1E
+
+#define BNO_REG_SYS_TRIGGER      0x3F
+#define BNO_TRIGGER_INT          0x00
+#define BNO_TRIGGER_EXT          0x80
+#define BNO_SYS_TRIGGER_RESET    0x20
+
+#define BNO_REG_SYS_ERROR        0x3A
+#define BNO_REG_SYS_ERROR_MASK   0b11111111
+#define BNO_REG_SYS_ERROR_SHIFT  0
+
+#define BNO_REG_PAGE_ID    0x07
+
 #define BNO_INIT 0
 
-#define BNO_ACC_ID 0xFB
-#define BNO_MAG_ID 0x32
-#define BNO_GYR_ID 0x0F
+#define BNO_CHIP_ID  0xA0
+#define BNO_ACC_ID   0xFB
+#define BNO_MAG_ID   0x32
+#define BNO_GYR_ID   0x0F
+
 
 #define SWITCH_TO_CONFIG_MS      7
 #define SWITCH_FROM_CONFIG_MS    19
@@ -63,10 +83,11 @@ struct AHRS_CONTEXT
 {
    i2c_context i2c;
    int i2c_addr;
+   AHRS_CALLBACK changed_cb;
 };
 
 
-static struct AHRS_CONTEXT contexts[AHRS_NUM_DEVICES];
+static struct AHRS_CONTEXT contexts[AHRS_NUM_DEVICES+1];
 static const char pwr_mode_strings[][32] =
 {
    "BNO_PWR_MODE_NORM",
@@ -102,6 +123,19 @@ static const char data_format_strings[][32] =
 {
    "Clock wise increasing",
    "Clock wise decreasing"
+};
+static const char syserr_strings[][64] =
+{
+   "No error",
+   "Peripheral initialization error",
+   "System initialization error",
+   "Self test result failed",
+   "Register map value out of range",
+   "Register map address out of range",
+   "Register map write error",
+   "BNO low power mode not available for selected operation mode",
+   "Accelerometer power mode not available",
+   "Fusion algorithm configuration error",
 };
 
 ahrs_context bno055_open(int device_id, i2c_context i2c, int i2c_address)
@@ -163,15 +197,107 @@ void bno055_info(ahrs_context ahrs)
    i2c_latch_device(contexts[ahrs].i2c, contexts[ahrs].i2c_addr);
    int regval = i2c_reg_read_byte(contexts[ahrs].i2c, BNO_REG_UNITS_EULER);
    regval = (regval & BNO_UNITS_EULER_MASK) >> BNO_UNITS_EULER_SHIFT;
-   printf("  Euler units      : [0x%X]%s\n", regval, euler_unit_strings[opr_mode]);
+   printf("  Euler units      : [0x%X]%s\n", regval, euler_unit_strings[regval]);
 
    i2c_latch_device(contexts[ahrs].i2c, contexts[ahrs].i2c_addr);
    regval = i2c_reg_read_byte(contexts[ahrs].i2c, BNO_REG_UNITS_TEMP);
    regval = (regval & BNO_UNITS_TEMP_MASK) >> BNO_UNITS_TEMP_SHIFT;
-   printf("  Temperature units: [0x%X]%s\n", regval, temp_unit_strings[opr_mode]);
+   printf("  Temperature units: [0x%X]%s\n", regval, temp_unit_strings[regval]);
 
    i2c_latch_device(contexts[ahrs].i2c, contexts[ahrs].i2c_addr);
    regval = i2c_reg_read_byte(contexts[ahrs].i2c, BNO_REG_DATA_FORMAT);
    regval = (regval & BNO_DATA_FORMAT_MASK) >> BNO_DATA_FORMAT_SHIFT;
-   printf("  Data Format      : [0x%X]%s\n", regval, data_format_strings[opr_mode]);
+   printf("  Data Format      : [0x%X]%s\n", regval, data_format_strings[regval]);
+}
+
+int bno055_run(AHRS_CALLBACK call_on_change)
+{
+   for (int i=1; i < AHRS_NUM_DEVICES+1; i++)
+   {
+      if (contexts[i].i2c_addr)
+      {
+         contexts[i].changed_cb = call_on_change;
+         printf("Starting BNO055 device id %d\n", i);
+
+         i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         i2c_reg_write_byte(contexts[i].i2c, BNO_REG_OPR_MODE, BNO_OPR_MODE_CONFIG);
+
+         i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         i2c_reg_write_byte(contexts[i].i2c, BNO_REG_SYS_TRIGGER, BNO_SYS_TRIGGER_RESET);
+         usleep(500 * 1000);
+
+         i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         uint8_t detected_chip_id = i2c_dev_read_byte(contexts[i].i2c);
+         while (detected_chip_id != BNO_CHIP_ID)
+         {
+            usleep(SWITCH_FROM_CONFIG_MS * 1000);
+            i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+            detected_chip_id = i2c_dev_read_byte(contexts[i].i2c);
+         }
+         usleep(100*1000);
+
+         i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         i2c_reg_write_byte(contexts[i].i2c, BNO_REG_PWR_MODE, BNO_PWR_MODE_NORM);
+         usleep(SWITCH_FROM_CONFIG_MS * 1000);
+
+         i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         i2c_reg_write_byte(contexts[i].i2c, BNO_REG_PAGEID, 0);
+
+         i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         i2c_reg_write_byte(contexts[i].i2c, BNO_REG_SYS_TRIGGER, 0);
+         usleep(SWITCH_FROM_CONFIG_MS * 10 * 1000);
+
+         i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         i2c_reg_write_byte(contexts[i].i2c, BNO_REG_OPR_MODE, BNO_OPR_MODE_NDOF);
+
+         usleep(SWITCH_FROM_CONFIG_MS * 20 * 1000);
+
+         i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         int regval = i2c_reg_read_byte(contexts[i].i2c, BNO_REG_SYS_ERROR);
+         regval = (regval & BNO_REG_SYS_ERROR_MASK) >> BNO_REG_SYS_ERROR_SHIFT;
+         printf("  System Status    : [0x%X]%s\n", regval, syserr_strings[regval]);
+
+         // i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         // i2c_reg_write_byte(contexts[i].i2c, BNO_REG_OPR_MODE, BNO_OPR_MODE_CONFIG);
+         // usleep(SWITCH_FROM_CONFIG_MS * 2 * 1000);
+
+         // i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         // i2c_reg_write_byte(contexts[i].i2c, BNO_REG_SYS_TRIGGER, BNO_TRIGGER_EXT);
+         // usleep(SWITCH_FROM_CONFIG_MS * 1000);
+
+         // i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         // i2c_reg_write_byte(contexts[i].i2c, BNO_REG_OPR_MODE, BNO_OPR_MODE_NDOF);
+         // usleep(SWITCH_FROM_CONFIG_MS * 2 * 1000);
+      }
+   }
+
+   while (1)
+   {
+      for(int i=1; i < AHRS_NUM_DEVICES+1; i++)
+      {
+         uint8_t bytes_msb_lsb[2];
+         i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         i2c_reg_read_many(contexts[i].i2c, BNO_REG_EULER_HEADING_LSB, bytes_msb_lsb, 2);
+         int16_t value = (((int16_t)bytes_msb_lsb[1]) << 8) | ((int16_t)bytes_msb_lsb[0]);
+         double dvalue = (double)value / 16.0;
+         int intvalue = (int)(dvalue * 100);
+         contexts[i].changed_cb(i, AHRS_AXIS_HEADING, intvalue);
+
+         i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         i2c_reg_read_many(contexts[i].i2c, BNO_REG_EULER_PITCH_LSB, bytes_msb_lsb, 2);
+         value = (((int16_t)bytes_msb_lsb[1]) << 8) | ((int16_t)bytes_msb_lsb[0]);
+         dvalue = (double)value / 16.0;
+         intvalue = (int)(dvalue * 100);
+         contexts[i].changed_cb(i, AHRS_AXIS_PITCH, intvalue);
+
+         i2c_latch_device(contexts[i].i2c, contexts[i].i2c_addr);
+         i2c_reg_read_many(contexts[i].i2c, BNO_REG_EULER_ROLL_LSB, bytes_msb_lsb, 2);
+         value = (((int16_t)bytes_msb_lsb[1]) << 8) | ((int16_t)bytes_msb_lsb[0]);
+         dvalue = (double)value / 16.0;
+         intvalue = (int)(dvalue * 100);
+         contexts[i].changed_cb(i, AHRS_AXIS_ROLL, intvalue);
+      }
+      usleep(250*1000);
+   }
+   return 1;
 }

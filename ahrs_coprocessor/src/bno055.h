@@ -10,5 +10,6 @@
 ahrs_context bno055_open(int device_id, i2c_context i2c_interface, int i2c_address);
 void bno055_close();
 void bno055_info(ahrs_context);
+int bno055_run(AHRS_CALLBACK call_on_change);
 
 #endif
