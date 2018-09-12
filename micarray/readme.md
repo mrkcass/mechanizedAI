@@ -10,23 +10,6 @@ corner of the Somax frame.
 #
 **Operation**
 
-The driver is initialized with an I2C bus and address for each sensors. Once
-intialized the sensor will be powered up and ready for operation.
-
-To receive sensor data after initialization, define a callback function as
-defined in ahrs.h and pass it as an argument to the run function. The run function is
-blocking and will call the callback with updated orientation data when available.
-
-The driver test app can be invoked with one of three options:
-* info - Display configuration data for each sensor and exit.
-* test - Initalize the sensors and then print realtime orientation data for each sensors
-  until ctrl-c is pressed.
-* run - Accuate the motors and tilt the camera up until parallel with the frame pitch.
-  next, pan camera to face the rear of the frame. next tilt the camera up to an
-  angle where a human head might be if seated and controlling the joystick. next, allow
-  the camera position to be adjusted by joystick until the joystick button is pressed.
-  finally, when the joystick button is pressed record the orientation of the camera
-  and maintain it's heading, pitch, and roll no matter how the frame is re-oriented.
 #
 **Status**
 * **August 29, 2018** - Mic array is wired and is passing signals electrically. I have verified
