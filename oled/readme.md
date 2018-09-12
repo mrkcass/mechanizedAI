@@ -1,44 +1,37 @@
-**MICARRAY**
+**OLEDC-FRAME**
 #
-Four channel MEMS microphone array
+1.5", 128x128, 16 bit RGB OLED display
 #
 **Functional Description**
 
-MICARRAY is a 4 channel MEMS, solid state, microphone array. The array is similar to the
-array found in the Amazon Alexa except it has 3 fewer channels. Each mic is placed at a
-corner of the Somax frame.
+OLEDC-FRAME is an OLED disply with 128x128 pixel displayed with 16 bits of RGB color. The
+display uses very low power at 50 milliamps at full operation.
+
+The display is connected to the SPI bus using SPI5.1 and can refresh at up to 40
+frames per second.
 #
 **Operation**
 
-#
-**Status**
-* **August 29, 2018** - Mic array is wired and is passing signals electrically. I have verified
-operation using a multi-meter while turning signals on and off. A PWM effect can be seen
-in all lines when an operation is executed. The same signals return to low voltage when
-the operation is terminated. I believe that some additional configuration is needed to
-Alsa and pusle audio to get this fully working. Next steps notes are in the pin map.
+
 #
 
 
 | Specs              | Value       |
 | ----------         | -------     |
-| Maker              | TDK/InvenSense |
-| Model              | ICS-52000 |
-| Protocol           | PCM / TDM
-| Resolution         | 24 bit per channel |
-| Sample Rate        | 48 kHz synchronized per channel |
-| Frequency Response | flat 50 Hz - 20 kHz |
-| SNR                |  65 dBA |
-| Sensitivity        | -26 dB FS |
-| Directionality     | Omni
-| Power Normal       |  1.4 mA per channel
-| Powre Standby      | .02 mA per channel
-| Voltage            | 1.8 - 3.3 volts
+| Maker              | Waveshare   |
+| Controller         | SSD1351     |
+| Voltage            | 3.3 v       |
+| Power              | 50 mA       |
+| Bus                | 4 wire SPI  |
+| Resolution         | 128 x 128   |
+| Color depth        | 16-bit RGB  |
+| Dimensions         | 44.5 x 37 mm |
+
 &nbsp;
 
 **Strapping**
 
-None
+BS - 0 / floating = 4 wire spi
 
 &nbsp;
 
@@ -47,13 +40,13 @@ None
 
 |ICS-52000 Pin		| Edison Mini-Breakout Pin |
 |------------- | ------------------------- |
-| VDD          | 1.8 POWER          |
+| VCC          | 3.3 POWER          |
 | GND          | GND                |
-| WSO          | mic daisy chain    |
-| CONFIG       | NC                 |
-| WS           | I2S2-FS            |
-| SCK          | I2S2-CLK           |
-| SD           | I2S2-RXD           |
+| DIN          | SSP5-MOSI          |
+| CLK          | SSP5-CLK           |
+| CS           | SSP5-CS1           |
+| DC           | GP128              |
+| RST          | GP130              |
 
 &nbsp;
 
