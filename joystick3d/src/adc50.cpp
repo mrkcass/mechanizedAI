@@ -23,10 +23,10 @@ struct ADC50_CONFIG_REGISTER
    int compare_que;
 };
 
-int adc50_init_onboardstick1x3D(mraa_i2c_context i2c1);
-int adc50_read_config_register(mraa_i2c_context i2c1);
-void adc50_write_config_register(mraa_i2c_context i2c1, int config_bits);
-int adc50_testsample(mraa_i2c_context i2c1);
+int adc50_init_onboardstick1x3D(i2c_context i2c1);
+int adc50_read_config_register(i2c_context i2c1);
+void adc50_write_config_register(i2c_context i2c1, int config_bits);
+int adc50_testsample(i2c_context i2c1);
 void adc50_uppack_configbits(struct ADC50_CONFIG_REGISTER *config_struct, int config_bits);
 int adc50_pack_config(struct ADC50_CONFIG_REGISTER *config_struct);
 void adc50_dump_config(int config);
@@ -96,7 +96,7 @@ char ADC50_COMPAREQUE_REG_STR[][64] = {
 
 
 
-int adc50_init(mraa_i2c_context i2c1, int adc50_input)
+int adc50_init(i2c_context i2c1, int adc50_input)
 {
    i2c_set_frequency(i2c1, I2C_FREQUENCY_400KHZ);
 
@@ -114,7 +114,7 @@ int adc50_init(mraa_i2c_context i2c1, int adc50_input)
    return 0;
 }
 
-int adc50_init_onboardstick1x3D(mraa_i2c_context i2c1)
+int adc50_init_onboardstick1x3D(i2c_context i2c1)
 {
    printf("\n\nJOY3D <-- ADC50 Configuration -----------\n");
    adc50_config_register.mux = ADC50_MUX_SINGLE_1;
@@ -130,28 +130,28 @@ int adc50_init_onboardstick1x3D(mraa_i2c_context i2c1)
    return 0;
 }
 
-int adc50_read_config_register(mraa_i2c_context i2c1)
+int adc50_read_config_register(i2c_context i2c1)
 {
    i2c_latch_device(i2c1, ADC50_I2C_ADDRESS);
    int regbits = i2c_reg_read_word(i2c1, ADC50_REG_POINTER_CONFIG);
    return ((regbits & 0xFF) << 8) | ((regbits >> 8) & 0xFF);
 }
 
-void adc50_write_config_register(mraa_i2c_context i2c1, int config_bits)
+void adc50_write_config_register(i2c_context i2c1, int config_bits)
 {
    i2c_latch_device(i2c1, ADC50_I2C_ADDRESS);
    uint16_t reg_bits = ((config_bits & 0xFF) << 8) | ((config_bits >> 8) & 0xFF);
    i2c_reg_write_word(i2c1, ADC50_REG_POINTER_CONFIG, reg_bits);
 }
 
-int adc50_read_conversion_register(mraa_i2c_context i2c1)
+int adc50_read_conversion_register(i2c_context i2c1)
 {
    i2c_latch_device(i2c1, ADC50_I2C_ADDRESS);
    int regbits = i2c_reg_read_word(i2c1, ADC50_REG_POINTER_CONVERSION);
    return ((regbits & 0xFF) << 8) | ((regbits >> 8) & 0xFF);
 }
 
-int adc50_sample_single_end(mraa_i2c_context i2c1, int channel)
+int adc50_sample_single_end(i2c_context i2c1, int channel)
 {
    adc50_config_register.mux = ADC50_MUX_SINGLE_1 + channel;
 
@@ -162,7 +162,7 @@ int adc50_sample_single_end(mraa_i2c_context i2c1, int channel)
    return adc50_read_conversion_register(i2c1);
 }
 
-int adc50_testsample(mraa_i2c_context i2c1)
+int adc50_testsample(i2c_context i2c1)
 {
    printf("Sampling:\n");
    while (1)

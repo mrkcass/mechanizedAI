@@ -32,7 +32,7 @@ struct termios orig_termios;
 #define MINMAX_TOLERANCE_FACTOR 200
 
 //todo: move this to adcs0
-static mraa_i2c_context joy3d_i2c_bus;
+static i2c_context joy3d_i2c_bus;
 static Joystick * stick;
 
 

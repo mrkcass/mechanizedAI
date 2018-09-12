@@ -15,12 +15,12 @@ static char frequency_str[][32] = {
 
 static int open_bus_number = 0;
 
-static void i2c_detect_devices(mraa_i2c_context i2c, int bus);
+static void i2c_detect_devices(i2c_context i2c, int bus);
 static mraa_result_t i2c_get(int bus, uint8_t device_address, uint8_t register_address, uint8_t* data);
 
-mraa_i2c_context i2c_open(int i2c_bus_num)
+i2c_context i2c_open(int i2c_bus_num)
 {
-    mraa_i2c_context i2c;
+    i2c_context i2c;
 
     i2c = mraa_i2c_init(i2c_bus_num);
 
@@ -35,13 +35,13 @@ mraa_i2c_context i2c_open(int i2c_bus_num)
     return i2c;
 }
 
-void i2c_close(mraa_i2c_context i2c)
+void i2c_close(i2c_context i2c)
 {
     open_bus_number = 0;
     mraa_i2c_stop(i2c);
 }
 
-int i2c_set_frequency(mraa_i2c_context i2c, int i2c_frequency)
+int i2c_set_frequency(i2c_context i2c, int i2c_frequency)
 {
     if (mraa_i2c_frequency(i2c, (mraa_i2c_mode_t)i2c_frequency) != MRAA_SUCCESS)
     {
@@ -52,7 +52,7 @@ int i2c_set_frequency(mraa_i2c_context i2c, int i2c_frequency)
     return i2c_frequency;
 }
 
-int i2c_latch_device(mraa_i2c_context i2c, uint8_t device_id)
+int i2c_latch_device(i2c_context i2c, uint8_t device_id)
 {
 	mraa_result_t status = MRAA_SUCCESS;
 	int error_occurred = 0;
@@ -67,7 +67,7 @@ int i2c_latch_device(mraa_i2c_context i2c, uint8_t device_id)
     return error_occurred;
 }
 
-int i2c_dev_read_byte(mraa_i2c_context i2c)
+int i2c_dev_read_byte(i2c_context i2c)
 {
     int byte_read = mraa_i2c_read_byte(i2c);
     if (byte_read == -1)
@@ -78,7 +78,7 @@ int i2c_dev_read_byte(mraa_i2c_context i2c)
     return byte_read;
 }
 
-int i2c_dev_read_word(mraa_i2c_context i2c)
+int i2c_dev_read_word(i2c_context i2c)
 {
     uint8_t read_buff[2];
     int num_bytes_read;
@@ -92,7 +92,7 @@ int i2c_dev_read_word(mraa_i2c_context i2c)
     return num_bytes_read;
 }
 
-int i2c_dev_read_bytes(mraa_i2c_context i2c, uint8_t *buffer, int num_bytes)
+int i2c_dev_read_bytes(i2c_context i2c, uint8_t *buffer, int num_bytes)
 {
     int num_bytes_read;
 
@@ -105,7 +105,7 @@ int i2c_dev_read_bytes(mraa_i2c_context i2c, uint8_t *buffer, int num_bytes)
     return num_bytes_read;
 }
 
-int i2c_dev_write_byte(mraa_i2c_context i2c, uint8_t byte)
+int i2c_dev_write_byte(i2c_context i2c, uint8_t byte)
 {
     int error_occurred = 0;
     int write_status;
@@ -119,7 +119,24 @@ int i2c_dev_write_byte(mraa_i2c_context i2c, uint8_t byte)
     return error_occurred;
 }
 
-int i2c_dev_write_bytes(mraa_i2c_context i2c, uint8_t *byte, uint8_t *buffer, int num_bytes)
+int i2c_dev_write_2bytes(i2c_context i2c, uint8_t byte0, uint8_t byte1)
+{
+    int write_status;
+    uint8_t bytes[2];
+
+    bytes[0] = byte0;
+    bytes[1] = byte1;
+
+    write_status = mraa_i2c_write(i2c, bytes, 2);
+    if (write_status != MRAA_SUCCESS)
+    {
+        printf("Error: i2c couldn't write device bytes\n");
+    }
+
+    return write_status;
+}
+
+int i2c_dev_write_bytes(i2c_context i2c, uint8_t *byte, uint8_t *buffer, int num_bytes)
 {
     int write_status;
 
@@ -145,7 +162,7 @@ int i2c_dev_write_bytes(mraa_i2c_context i2c, uint8_t *byte, uint8_t *buffer, in
 
 
 
-int i2c_reg_read_byte(mraa_i2c_context i2c, uint8_t register_id)
+int i2c_reg_read_byte(i2c_context i2c, uint8_t register_id)
 {
     int num_bytes_read;
 
@@ -158,7 +175,7 @@ int i2c_reg_read_byte(mraa_i2c_context i2c, uint8_t register_id)
     return num_bytes_read;
 }
 
-int i2c_reg_read_word(mraa_i2c_context i2c, uint8_t register_id)
+int i2c_reg_read_word(i2c_context i2c, uint8_t register_id)
 {
     int num_bytes_read;
 
@@ -171,7 +188,7 @@ int i2c_reg_read_word(mraa_i2c_context i2c, uint8_t register_id)
     return num_bytes_read;
 }
 
-int i2c_reg_read_many(mraa_i2c_context i2c, uint8_t first_register_id, uint8_t *buffer, int num_registers)
+int i2c_reg_read_many(i2c_context i2c, uint8_t first_register_id, uint8_t *buffer, int num_registers)
 {
     int error_occurred = 0;
     int num_bytes_read;
@@ -186,7 +203,7 @@ int i2c_reg_read_many(mraa_i2c_context i2c, uint8_t first_register_id, uint8_t *
     return error_occurred;
 }
 
-int i2c_reg_write_byte(mraa_i2c_context i2c, uint8_t register_id, uint8_t value)
+int i2c_reg_write_byte(i2c_context i2c, uint8_t register_id, uint8_t value)
 {
 	mraa_result_t status = MRAA_SUCCESS;
 	int error_occurred = 0;
@@ -201,7 +218,7 @@ int i2c_reg_write_byte(mraa_i2c_context i2c, uint8_t register_id, uint8_t value)
     return error_occurred;
 }
 
-int i2c_reg_write_orbyte(mraa_i2c_context i2c, uint8_t register_id, uint8_t value)
+int i2c_reg_write_bits(i2c_context i2c, uint8_t register_id, uint8_t bit0, uint8_t num_bits, uint8_t bits)
 {
     mraa_result_t status = MRAA_SUCCESS;
     int error_occurred = 0;
@@ -213,7 +230,9 @@ int i2c_reg_write_orbyte(mraa_i2c_context i2c, uint8_t register_id, uint8_t valu
         printf("Error: i2c couldn't read byte");
         error_occurred = 1;
     }
-    reg_val |= value;
+    uint8_t mask = 1;
+    for (int i=0; i < num_bits - 1; i++) mask *= 2;
+    reg_val = (reg_val & !mask) + (bits << bit0);
     if (!error_occurred)
         status = mraa_i2c_write_byte_data(i2c, reg_val, register_id);
     if (!error_occurred && status != MRAA_SUCCESS)
@@ -225,7 +244,7 @@ int i2c_reg_write_orbyte(mraa_i2c_context i2c, uint8_t register_id, uint8_t valu
     return error_occurred;
 }
 
-int i2c_reg_write_word(mraa_i2c_context i2c, uint8_t register_id, uint16_t value)
+int i2c_reg_write_word(i2c_context i2c, uint8_t register_id, uint16_t value)
 {
     mraa_result_t status = MRAA_SUCCESS;
     int error_occurred = 0;
@@ -254,7 +273,7 @@ void debug(int argc, char **argv)
 
 	mraa_init();
 
-	mraa_i2c_context i2c;
+	i2c_context i2c;
 	i2c = mraa_i2c_init(bus);
 
 	i2c_detect_devices(i2c, bus);
@@ -267,9 +286,9 @@ void debug(int argc, char **argv)
 	exit(0);
 }
 
-static void i2c_detect_devices(mraa_i2c_context i2c, int bus)
+static void i2c_detect_devices(i2c_context i2c, int bus)
 {
-    //mraa_i2c_context i2c = mraa_i2c_init(bus);
+    //i2c_context i2c = mraa_i2c_init(bus);
     if (i2c == NULL) {
         return;
     }
@@ -290,7 +309,7 @@ static void i2c_detect_devices(mraa_i2c_context i2c, int bus)
 static mraa_result_t i2c_get(int bus, uint8_t device_address, uint8_t register_address, uint8_t* data)
 {
     mraa_result_t status = MRAA_SUCCESS;
-    mraa_i2c_context i2c = mraa_i2c_init(bus);
+    i2c_context i2c = mraa_i2c_init(bus);
     if (i2c == NULL) {
         return MRAA_ERROR_NO_RESOURCES;
     }

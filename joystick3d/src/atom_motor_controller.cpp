@@ -38,7 +38,7 @@
 #define GPIO_MTRTILTU_IN3   48
 #define GPIO_MTRTILTU_IN4   14
 
-#define GPIO_MTRROTATE_IN1  15
+#define GPIO_MTRROTATE_IN1  84
 #define GPIO_MTRROTATE_IN2  45
 #define GPIO_MTRROTATE_IN3  47
 #define GPIO_MTRROTATE_IN4  49
@@ -67,7 +67,7 @@ int motor_speed_delay[NUM_POWER_LEVELS][NUM_MOTORS] =
    { 8 * scale,  8 * scale,  8 * scale},
 };
 unsigned long motor_countdowntimer[NUM_MOTORS] = {2000, 2000, 2000};
-unsigned long motor_idle_pwm_rate[NUM_MOTORS] = {IDLE_PWM_RATE, IDLE_PWM_RATE, IDLE_PWM_RATE/2};
+unsigned long motor_idle_pwm_rate[NUM_MOTORS] = {IDLE_PWM_RATE, IDLE_PWM_RATE, IDLE_PWM_RATE};
 unsigned long motor_idle_pwm[NUM_MOTORS] = {0, 0, 0};
 unsigned long motor_countdowntimes_lasttime[NUM_MOTORS] = {0, 0, 0};
 struct Wire gpio_lines[12];

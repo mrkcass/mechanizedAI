@@ -20,8 +20,8 @@
 #define ADC50_INPUT_JOY3D   1
 #define ADC50_INPUT_JOY2X2D 2
 
-int adc50_init(mraa_i2c_context i2c1, int adc50_input);
-int adc50_sample_single_end(mraa_i2c_context i2c1, int channel);
+int adc50_init(i2c_context i2c1, int adc50_input);
+int adc50_sample_single_end(i2c_context i2c1, int channel);
 
 
 
