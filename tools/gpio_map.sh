@@ -1,7 +1,7 @@
 #!/bin/bash
 
 somax_pin_map_p3="
-J17-1   GP182         PWM2           MTRTILTL-IN1
+J17-1   GP182         PWM2           MTRROTATE-IN1
 J17-2   NC
 J17-3   NC
 J17-4   VIN           -              PSU12V-VOUT
@@ -26,8 +26,8 @@ J18-7   GP12          PWM0           MTRPAN-IN3
 J18-8   GP183         PWM3           MTRPAN-IN4
 J18-9   NC            -
 J18-10  GP110         SPI5-FS0
-J18-11  GP114         SPI5-RXD       MTRTILTL-IN4
-J18-12  GP129         UART1-RTS      MTRTILTL-IN2
+J18-11  GP114         SPI5-RXD       MTRROTATE-IN2
+J18-12  GP129         UART1-RTS      MTRROTATE-IN3
 J18-13  GP130         UART1-RX       LVL33U-3 OLEDFRAME-RST
 J18-14  FW-RCVR       -
 
@@ -38,7 +38,7 @@ J19-4   GP44          -              MTRTILTU-IN1
 J19-5   GP46          -              MTRTILTU-IN2
 J19-6   GP48          -              MTRTILTU-IN3
 J19-7   RESET         -
-J19-8   GP131         UART1-TX       MTRTILTL-IN3
+J19-8   GP131         UART1-TX       MTRROTATE-IN4
 J19-9   GP14          -              MTRTILTU-IN4
 J19-10  GP40          I2S2-CLK       MICARRAY-SCK
 J19-11  GP43          I2S2-TXD       MICARRAY-TXD
@@ -49,11 +49,11 @@ J19-14  GP83          SD-DAT3
 J20-1   VSYS          -
 J20-2   V3P30         -
 J20-3   UART2-RX       -
-J20-4   GP45          -              MTRROTATE-IN2
-J20-5   GP47          -              MTRROTATE-IN3
-J20-6   GP49          -              MTRROTATE-IN4
+J20-4   GP45          -              MTRTILTL-IN2
+J20-5   GP47          -              MTRTILTL-IN3
+J20-6   GP49          -              MTRTILTL-IN4
 J20-7   GP15          -
-J20-8   GP84          SD-CLK-FB      MTRROTATE-IN1
+J20-8   GP84          SD-CLK-FB      MTRTILTL-IN1
 J20-9   GP42          I2S2-RXD       MICARRAY-SD
 J20-10  GP41          I2S2-FS        MICARRAY-WS
 J20-11  GP78          SD-CLK

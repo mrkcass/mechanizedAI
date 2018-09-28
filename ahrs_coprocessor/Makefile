@@ -3,25 +3,16 @@
 PROJ_NAME=ahrs_coprocessor
 
 OBJECT_FILES = ahrscop_main.o 			\
-					ahrs.o						\
-					bno055.o						\
-					joystick3d_stick.o 		\
-					mcu_motor_controller.o 	\
-					atom_motor_controller.o \
-					adc50.o 						\
-					wire.o 						\
-					i2c_interface.o 			\
-					somax.o
 
 SRC_DIR = src
 OBJ_DIR = build
 
 CC = g++
-INLUDE_PATHS = -I. -I/usr/include
+INCLUDE_PATHS = -I. -I/usr/include -I../libhardware/src
 CFLAGS = -Wall -O2
 
-LIB_PATHS = -L/usr/lib
-LIBS=-lpthread -lmraa
+LIB_PATHS = -L/usr/lib -L../libhardware
+LIBS = -lpthread -lmraa -lhardware
 
 OBJ = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_FILES))
 

@@ -9,15 +9,24 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "mraa.h"
 #include "somax.h"
+#include "i2c_interface.h"
 #include "ahrs.h"
+#include "bno055.h"
 
 
 #define SOMAX_NAME "SOMAX-AHRSCAMD, SOMAX-AHRSFRAME"
 #define SOMAX_CLASS "SOMAX_HARDWARE-INPUT-ORIENTATION"
 #define SOMAX_VERSION "1.0.0"
 #define SOMAX_RESOURCES "SOMAX-I2C1 SOMAX-I2C6"
+
+#define AHRS_CAMD_I2C_BUS        6
+#define AHRS_CAMD_I2C_ADDRESS    0x29
+#define AHRS_FRAME_I2C_BUS       1
+#define AHRS_FRAME_I2C_ADDRESS   0x29
+
+static i2c_context ahrs_i2c_bus_camd;
+static i2c_context ahrs_i2c_bus_frame;
 
 static ahrs_context ahrs_camd;
 static ahrs_context ahrs_frame;
@@ -29,7 +38,7 @@ void ahrscop_display_help();
 void ahrscop_info();
 void ahrscop_test();
 
-void test_callback(ahrs_context, int axis, int value);
+void test_callback(int device_id, int axis, int value);
 
 
 
@@ -50,21 +59,18 @@ int main(int argc, char *argv[])
    mraa_init();
 
    return_code = ahrscop_open_camd();
-
    if (!return_code)
       return_code = ahrscop_open_frame();
 
    if (!return_code && somax_commandline_has_option(argc, argv, "info"))
-   {
       ahrscop_info();
-   }
    else if (!return_code && somax_commandline_has_option(argc, argv, "test"))
    {
       ahrscop_info();
-      ahrs_test(AHRS_OUTPUTFORMAT_EULER);
+      ahrs_test();
    }
-   else if (!return_code && somax_commandline_has_option(argc, argv, "run"))
-      ahrs_test(AHRS_OUTPUTFORMAT_QUATERNION);
+   else if (!return_code && somax_commandline_has_option(argc, argv, "sample-pwr"))
+      ahrs_run(test_callback);
 
    ahrscop_close();
    mraa_deinit();
@@ -94,21 +100,31 @@ void ahrscop_display_help()
 
 int ahrscop_open_camd()
 {
-   ahrs_camd = ahrs_open(AHRS_ID_CAMD);
-   printf("ahrs_camd == %p\n", ahrs_camd);
+   ahrs_i2c_bus_camd = i2c_open(AHRS_CAMD_I2C_BUS);
+
+   if (ahrs_i2c_bus_camd)
+      ahrs_camd = ahrs_open_i2c(AHRS_ID_CAMD, ahrs_i2c_bus_camd, AHRS_CAMD_I2C_ADDRESS);
+
    return ahrs_camd == AHRS_CONTEXT_NULL;
 }
 
 int ahrscop_open_frame()
 {
-   ahrs_frame = ahrs_open(AHRS_ID_FRAME);
-   printf("ahrs_frame == %p\n", ahrs_frame);
+   ahrs_i2c_bus_frame = i2c_open(AHRS_FRAME_I2C_BUS);
+
+   if (ahrs_i2c_bus_frame)
+      ahrs_frame = ahrs_open_i2c(AHRS_ID_FRAME, ahrs_i2c_bus_frame, AHRS_FRAME_I2C_ADDRESS);
+
    return ahrs_frame == AHRS_CONTEXT_NULL;
 }
 
 void ahrscop_close()
 {
    ahrs_close();
+   if (ahrs_i2c_bus_camd)
+      i2c_close(ahrs_i2c_bus_camd);
+   if (ahrs_i2c_bus_frame)
+      i2c_close(ahrs_i2c_bus_frame);
 }
 
 void ahrscop_info()
@@ -119,10 +135,21 @@ void ahrscop_info()
 
 void ahrscop_test()
 {
-   ahrs_test(AHRS_OUTPUTFORMAT_QUATERNION);
+   ahrs_test();
 }
 
-void test_callback(ahrs_context ahrs, int axis, int value)
+void test_callback(int device_id, int axis, int value)
 {
+   static int current[AHRS_NUM_DEVICES + 1][AHRS_NUM_AXIS];
 
+   current[device_id][axis] = value;
+
+//    printf("FPAN[%3d.%2d] FTILT[%3d.%2d] FROTATE[%3d.%2d] CPAN[%3d.%2d] CTILT[%3d.%2d] CROTATE[%3d.%2d]\r",
+//           current[2][0] / 100, current[2][0] - ((current[2][0] / 100) * 100),
+//           current[2][1] / 100, current[2][1] - ((current[2][1] / 100) * 100),
+//           current[2][2] / 100, current[2][2] - ((current[2][2] / 100) * 100),
+//           current[1][0] / 100, current[1][0] - ((current[1][0] / 100) * 100),
+//           current[1][1] / 100, current[1][1] - ((current[1][1] / 100) * 100),
+//           current[1][2] / 100, current[1][2] - ((current[1][2] / 100) * 100));
+//    fflush(stdout);
 }

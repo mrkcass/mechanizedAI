@@ -31,8 +31,6 @@ struct termios orig_termios;
 #define NUM_AXIS 3
 #define MINMAX_TOLERANCE_FACTOR 200
 
-//todo: move this to adcs0
-static i2c_context joy3d_i2c_bus;
 static Joystick * stick;
 
 
@@ -105,7 +103,7 @@ int main(int argc, char *argv[])
       stick->run();
    }
 
-   if (!return_code && !joy3d_i2c_bus)
+   if (!return_code)
       return_code = -1;
    joy3d_close();
    mraa_deinit();
@@ -143,8 +141,7 @@ bool joy3d_display_help(int argc, char *argv[])
 
 int joy3d_open_adc()
 {
-   joy3d_i2c_bus = i2c_open(ADC50_I2C_BUS_NUM);
-   adc50_init(joy3d_i2c_bus, ADC50_INPUT_JOY3D);
+   adc50_init(ADC50_INPUT_JOY3D);
 
    return 0;
 }
@@ -158,40 +155,35 @@ int joy3d_open_stick(bool test_mode)
                      joy3d_changed_cb_run,
                      MINMAX_TOLERANCE_FACTOR,
                      NUM_POWER_LEVELS);
-    else
+   else
       stick->connect(joy3d_sample_axis,
                      joy3d_sample_button,
                      joy3d_changed_cb_test_stick,
                      MINMAX_TOLERANCE_FACTOR,
                      NUM_POWER_LEVELS);
 
-   return 0;
+    return 0;
 }
 
 int joy3d_close()
 {
-   if (joy3d_i2c_bus)
-   {
-      i2c_close(joy3d_i2c_bus);
-   }
-
    return 0;
 }
 
 int joy3d_sample_axis(int axis)
 {
    if (axis == JOY3D_AXIS_X)
-      return adc50_sample_single_end(joy3d_i2c_bus, 0);
+      return adc50_sample_single_end(0);
    else if (axis == JOY3D_AXIS_Y)
-      return adc50_sample_single_end(joy3d_i2c_bus, 2);
+      return adc50_sample_single_end(2);
    else if (axis == JOY3D_AXIS_Z)
-      return adc50_sample_single_end(joy3d_i2c_bus, 1);
+      return adc50_sample_single_end(1);
    return 0;
 }
 
 int joy3d_sample_button()
 {
-   return adc50_sample_single_end(joy3d_i2c_bus, 3) > BUTTON_ANALOG_THRESHOLD;
+   return adc50_sample_single_end(3) > BUTTON_ANALOG_THRESHOLD;
 }
 
 static char POWER_ON_CMD[]  =  "poweron       \n";
@@ -270,10 +262,10 @@ int joy3d_test_adc()
    printf("Sampling JOY3D:\n");
    while (1)
    {
-      int a0 = adc50_sample_single_end(joy3d_i2c_bus, 0);
-      int a1 = adc50_sample_single_end(joy3d_i2c_bus, 1);
-      int a2 = adc50_sample_single_end(joy3d_i2c_bus, 2);
-      int a3 = adc50_sample_single_end(joy3d_i2c_bus, 3);
+      int a0 = adc50_sample_single_end(0);
+      int a1 = adc50_sample_single_end(1);
+      int a2 = adc50_sample_single_end(2);
+      int a3 = adc50_sample_single_end(3);
 
       printf("   JOYPAN[0]: %6d   JOYTILT[2]: %6d  JOYROTATE[1]: %6d JOYB: %6d\r", a0, a1, a2, a3);
       fflush(stdout);

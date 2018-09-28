@@ -1,18 +1,29 @@
 
 
-PROJ_NAME=joystick3d
+PROJ_NAME=libhardware.a
 
-OBJECT_FILES = joystick3d_main.o
+OBJECT_FILES = ahrs.o						\
+					adc50.o						\
+					bno055.o						\
+					joystick3d_stick.o 		\
+					mcu_motor_controller.o 	\
+					atom_motor_controller.o \
+					ledstrip-ws2812b.o		\
+					micarray-ics52000.o		\
+					wire.o 						\
+					i2c_interface.o 			\
+					somax.o
 
 SRC_DIR = src
 OBJ_DIR = build
 
+AR = ar
 CC = g++
-INCLUDE_PATHS = -I. -I/usr/include -I../libhardware/src
+INCLUDE_PATHS = -I. -I/usr/include
 CFLAGS = -Wall -O2
 
-LIB_PATHS = -L/usr/lib -L../libhardware
-LIBS = -lpthread -lmraa -lhardware
+LIB_PATHS = -L/usr/lib
+LIBS=-lpthread -lmraa
 
 OBJ = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_FILES))
 
@@ -25,7 +36,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS) $(INCLUDE_PATHS)
 
 $(PROJ_NAME): $(OBJ)
-	 $(CC) -o $@ $^ $(CFLAGS) $(LIB_PATHS) $(LIBS)
+	 $(AR) rcs $@ $^
 
 start_build_message:
 	$(info #)

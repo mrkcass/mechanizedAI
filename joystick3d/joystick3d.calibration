@@ -1,6 +1,6 @@
 # Calibration data for SOMAX 3D Joystick
 # lines starting with # are ignored
 # name : axis id : tolerance : invert : center : dead_center_min : dead_center_max : live_center_min : live_center_max : left, left_min : left_max : right : right_min : right_max
-            AXIS-PAN : 0 : 200 : 0 :   12965 :   12764 :   13970 : 1000000 :       0 :       3 :       1 :    1207 :   26994 :   25390 :   26998
-           AXIS-TILT : 1 : 200 : 1 :   13075 :   12673 :   13678 : 1000000 :       0 :       2 :       0 :    1005 :   26993 :   25189 :   26998
-         AXIS-ROTATE : 2 : 200 : 0 :   13146 :   12945 :   13749 : 1000000 :       0 :       2 :       0 :    1206 :   26994 :   25591 :   26998
+   AXIS-PAN : 0 : 200 : 0 :   12965 :   12764 :   13970 : 1000000 :       0 :       3 :       1 :    1207 :   26994 :   25390 :   26998
+  AXIS-TILT : 1 : 200 : 1 :   13075 :   12673 :   13678 : 1000000 :       0 :       2 :       0 :    1005 :   26993 :   25189 :   26998
+AXIS-ROTATE : 2 : 200 : 0 :   13146 :   12945 :   13749 : 1000000 :       0 :       2 :       0 :    1206 :   26994 :   25591 :   26998
