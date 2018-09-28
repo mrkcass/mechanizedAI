@@ -37,6 +37,28 @@ The driver test app can be invoked with one of three options:
   and maintain it's heading, pitch, and roll no matter how the frame is re-oriented.
 #
 **Status**
+* September 27, 2018 - Working on getting the ahrs, motor controller, and joystick synchronized. When complete
+  the joystick will have new function to calibarate the ahrs. In this mode it will bring itself parallel with the
+  frame and then move in a controlled way to get the ahrs calibration settings and then write them
+  to file. the file will be loaed with by the ahrs whenever the ahrs is invoked.
+* September 26, 2018 - I believe this sensor is not usable in fusion mode for heading, but
+  certainly is usable for pitch and roll. The pitch and roll output data is always accurate and
+  generally calculated very fast. output of heading data however is prone to error for almost no reason other
+  than rolling the sensor. if i calibrate the sensor to be heading, pitch and roll tolerant ([3:3:3:3] calibration),
+  it will report accurately for a period of time, longer when not tiled by more than 22 degrees, but if the sensor has not
+  rolled for a extended period of time, the sensor will loose it's lock on the heading and will never recover
+  the original heading. at this point pitching the sensor up and down for a moment will allow the sensor to
+  again stabilize at a new heading. the difference in heaading has no obvious means of calulation. my thinking at the
+  moment is to abandon the heading and calculate the orientation based on the raw magnetic field data.
+  motor control can move the camera sensor precisely and the position, tilt, and roll can be recorded for each.
+  the output at many locations can be saved to file for input to an AI that predicts motor position based on tilt, roll,
+  and raw x,y,z magnetic data. it may be possible to use both sensors to improve the accuracy of each by feeding
+  both to the ai as one event. when the acccuracy is good then it would be intesting to see how this
+  might autoencode to a smaller footprint. might even be possible to subdivide the sphere of data to
+  get better accuracy when recombined.
+* September 26, 2018 - added quaternion output mode in hopes of getting a better calibration with
+   respect to heading. while it improved the accuracy along heading and pitch axis, it had
+   no affect on heading, pitch, and roll.
 * September 10, 2018 - Sensors are operational and are sending heading, pitch, and roll
   data for both frame and camera sensors. sensors are ready for handoff.
 * September 9, 2018 - Both sensors are talking to the host and are reporting register status

@@ -47,6 +47,9 @@ is no delay when powering off the motors and so will happen immediately.
 #
 **Status**
 
+* September 26, 2018 - added a few more levels to the joystick and motor controller for better
+  low and high speed control. the stick can move easily in increments of two steps or as fast
+  as a revolution every second.
 * September/06/2018 - Motors are fixed, No more brown out! All motors are now enabled.
   A service was also added to start the joystick at boot. The problem was fixed by
   adjusting the voltage going the pan and tilt motors. these motors should only
