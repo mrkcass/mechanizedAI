@@ -77,6 +77,13 @@
 #define BNO_REG_QUATERION_Z_LSB     0x26
 #define BNO_REG_QUATERION_Z_MSB     0x27
 
+#define BNO_REG_MAGDATA_X_LSB       0x0E
+#define BNO_REG_MAGDATA_X_MSB       0x0F
+#define BNO_REG_MAGDATA_Y_LSB       0x10
+#define BNO_REG_MAGDATA_Y_MSB       0x11
+#define BNO_REG_MAGDATA_Z_LSB       0x12
+#define BNO_REG_MAGDATA_Z_MSB       0x13
+
 #define BNO_REG_SYS_TRIGGER         0x3F
 #define BNO_TRIGGER_INT             0x00
 #define BNO_TRIGGER_EXT             0x80
@@ -182,6 +189,7 @@ struct BNO_CONTEXT
    i2c_context i2c;
    AHRS_EULER_CALLBACK euler_observer;
    AHRS_QUATERNION_CALLBACK quaternion_observer;
+   AHRS_MAGNETOMETER_CALLBACK magnetometer_observer;
    int axis_map;
    int axis_sign;
 };
@@ -244,6 +252,7 @@ static int i2c_busdevice[] = {BNO_CAMD_I2C_BUS, BNO_CAMD_I2C_ADDRESS, BNO_FRAME_
 static void bno055_run_configure_device(int dev_id);
 static void bno055_run_update_euler_observer(int dev_id);
 static void bno055_run_update_quaternion_observer(int dev_id);
+static void bno055_run_update_magnetometer_observer(int dev_id);
 
 
 
@@ -354,13 +363,30 @@ void bno055_output_callbk_quaternion(ahrs_context ahrs, AHRS_QUATERNION_CALLBACK
    }
 }
 
+//if ahrs_context is NULL, then set callback for all devices.
+void bno055_output_callbk_magnetometer(ahrs_context ahrs, AHRS_MAGNETOMETER_CALLBACK magnetometer_callbk)
+{
+   BNO_CONTEXT *ctx = (BNO_CONTEXT *)ahrs;
+
+   if (ctx)
+   {
+      ctx->magnetometer_observer = magnetometer_callbk;
+      return;
+   }
+
+   for (int i = 0; i < AHRS_NUM_DEVICES; i++)
+   {
+      bno055_output_callbk_magnetometer((ahrs_context)&contexts[i], magnetometer_callbk);
+   }
+}
+
 int bno055_run()
 {
    for (int i = 0; i < AHRS_NUM_DEVICES; i++)
    {
       if (contexts[i].i2c)
       {
-         if (!contexts[i].euler_observer && !contexts[i].quaternion_observer)
+         if (!contexts[i].euler_observer && !contexts[i].quaternion_observer && !contexts[i].magnetometer_observer)
             somax_log_add(SOMAX_LOG_WARN, "BNO055-%d : No assigned data output callbacks");
          bno055_run_configure_device(i);
       }
@@ -376,6 +402,8 @@ int bno055_run()
             bno055_run_update_euler_observer(i);
          if (contexts[i].quaternion_observer)
             bno055_run_update_quaternion_observer(i);
+         if (contexts[i].magnetometer_observer)
+            bno055_run_update_magnetometer_observer(i);
       }
       usleep(125*1000);
    }
@@ -470,7 +498,7 @@ static void bno055_run_configure_device(int dev_id)
    i2c_reg_write_byte(contexts[dev_id].i2c, BNO_REG_AXIS_MAP, contexts[dev_id].axis_map);
    i2c_reg_write_byte(contexts[dev_id].i2c, BNO_REG_AXIS_SIGN, contexts[dev_id].axis_sign);
 
-   i2c_reg_write_byte(contexts[dev_id].i2c, BNO_REG_OPR_MODE, BNO_OPR_MODE_NDOF);
+   i2c_reg_write_byte(contexts[dev_id].i2c, BNO_REG_OPR_MODE, BNO_OPR_MODE_ACCMAGGYRO);
 
    usleep(SWITCH_FROM_CONFIG_MS * 20 * U_MILLISECOND);
 
@@ -518,4 +546,13 @@ static void bno055_run_update_quaternion_observer(int dev_id)
    contexts[dev_id].quaternion_observer((ahrs_context)&contexts[dev_id], w, x, y, z);
 }
 
+static void bno055_run_update_magnetometer_observer(int dev_id)
+{
+   uint8_t bytes_msb_lsb[6];
+   i2c_reg_read_many(contexts[dev_id].i2c, BNO_REG_MAGDATA_X_LSB, &bytes_msb_lsb[0], 6);
+   int16_t x = (((int16_t)bytes_msb_lsb[1]) << 8) | ((int16_t)bytes_msb_lsb[0]);
+   int16_t y = (((int16_t)bytes_msb_lsb[3]) << 8) | ((int16_t)bytes_msb_lsb[2]);
+   int16_t z = (((int16_t)bytes_msb_lsb[5]) << 8) | ((int16_t)bytes_msb_lsb[4]);
 
+   contexts[dev_id].magnetometer_observer((ahrs_context)&contexts[dev_id], x, y, z);
+}

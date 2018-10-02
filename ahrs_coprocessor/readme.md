@@ -37,11 +37,18 @@ The driver test app can be invoked with one of three options:
   and maintain it's heading, pitch, and roll no matter how the frame is re-oriented.
 #
 **Status**
-* September 27, 2018 - Working on getting the ahrs, motor controller, and joystick synchronized. When complete
+* **October 1, 2018** - Added mode to measure the magnetic field and also installed a magnet to the
+  frame at the position where the gimbal parks itself when powered off. The problem with heading
+  accuracy persists and is likely caused by the large magnetic fields detected when viewing magnetometer output data.
+  it would seem that the motors are putting out enough EMF to permanently confuse the BNO055. Then i had
+  an idea! I can't detect the compass bearing due to large magnetic fields coming from the gimbal motors and
+  frame components but can i still detect large magentic fields? Luckily the purpose for the heading/compass bearing
+  is to orient the camera to the frame, not the frame to  magnetic compass bearing. Then I realized that I have a really good magnetometer in the BNO055 and just maybe it could detect  when or when it is not near a magnet. Well, it can! I attached a rare earth magnet at the location on the frame where  the gimbal rests when powered off. This location is parallel to the frame left edge when viewed from the rear of the frame.  To find the magnet from a zero degree tilt i:
+  tilted 30 degrees down and then panned the camera 360 degrees while recording the magnetic field at each location. The field above the magnet was, as hoped, very different from everywhere else. In fact, it was about an order of magnitude different! Will finish the code to make this automatic and integrated with the joystick power-on / power-off sequencing so that the gimbal is positioned correctly at power on and power off.
+* **September 27, 2018** - Working on getting the ahrs, motor controller, and joystick synchronized. When complete
   the joystick will have new function to calibarate the ahrs. In this mode it will bring itself parallel with the
-  frame and then move in a controlled way to get the ahrs calibration settings and then write them
-  to file. the file will be loaed with by the ahrs whenever the ahrs is invoked.
-* September 26, 2018 - I believe this sensor is not usable in fusion mode for heading, but
+  frame and then move in a controlled way, learning the ahrs calibration settings and which are written to file. the file will be loaded by the ahrs whenever the ahrs is invoked.
+* **September 26, 2018** - I believe this sensor is not usable in fusion mode for heading, but
   certainly is usable for pitch and roll. The pitch and roll output data is always accurate and
   generally calculated very fast. output of heading data however is prone to error for almost no reason other
   than rolling the sensor. if i calibrate the sensor to be heading, pitch and roll tolerant ([3:3:3:3] calibration),
@@ -56,12 +63,12 @@ The driver test app can be invoked with one of three options:
   both to the ai as one event. when the acccuracy is good then it would be intesting to see how this
   might autoencode to a smaller footprint. might even be possible to subdivide the sphere of data to
   get better accuracy when recombined.
-* September 26, 2018 - added quaternion output mode in hopes of getting a better calibration with
+* **September 26, 2018** - added quaternion output mode in hopes of getting a better calibration with
    respect to heading. while it improved the accuracy along heading and pitch axis, it had
    no affect on heading, pitch, and roll.
-* September 10, 2018 - Sensors are operational and are sending heading, pitch, and roll
+* **September 10, 2018** - Sensors are operational and are sending heading, pitch, and roll
   data for both frame and camera sensors. sensors are ready for handoff.
-* September 9, 2018 - Both sensors are talking to the host and are reporting register status
+* **September 9, 2018** - Both sensors are talking to the host and are reporting register status
   information. Next step is to configure the sensors and read data.
 #
 

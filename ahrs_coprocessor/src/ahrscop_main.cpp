@@ -63,6 +63,12 @@ int main(int argc, char *argv[])
       ahrscop_info();
       ahrs_test(AHRS_OUTPUTFORMAT_EULER);
    }
+   else if (!return_code && somax_commandline_has_option(argc, argv, "test-mag"))
+   {
+      printf ("AHRS testing magnetometer\n");
+      ahrscop_info();
+      ahrs_test(AHRS_OUTPUTFORMAT_MAGNETOMETER);
+   }
    else if (!return_code && somax_commandline_has_option(argc, argv, "run"))
       ahrs_test(AHRS_OUTPUTFORMAT_QUATERNION);
 

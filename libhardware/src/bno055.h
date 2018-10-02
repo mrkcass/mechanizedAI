@@ -23,6 +23,7 @@ int  bno055_run();
 void bno055_info(ahrs_context ahrs);
 void bno055_output_callbk_euler(ahrs_context ahrs, AHRS_EULER_CALLBACK euler_callbk);
 void bno055_output_callbk_quaternion(ahrs_context ahrs, AHRS_QUATERNION_CALLBACK quaternion_callbk);
+void bno055_output_callbk_magnetometer(ahrs_context ahrs, AHRS_MAGNETOMETER_CALLBACK magnetometer_callbk);
 void bno055_calibration_status(ahrs_context ahrs, int *calibstat_sys, int *calibstat_gyro, int *calibstat_acc, int *calibstat_mag);
 ahrs_id bno055_context_to_id(ahrs_context ahrs);
 

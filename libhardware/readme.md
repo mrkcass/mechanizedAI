@@ -1,94 +1,101 @@
-**AHRSCAMD, AHRSFRAME Driver**
+**libHardware**
 #
-Dual attitude, heading and reference systems (AHRS)
+C source code library for Somax hardware. Most of the files have a corresponding
+hardware test and/or server applications (i.e joystick3d and ahrs_coprocessor).
+
+Somax Sofware Stack
+
+   * Layer 1 - Applications.
+      * gimbal_autoscan_and_hold (observation) (planned)
+         * A gimbal/camera application to initiate visual auto-scan an environment for a known
+         target image. when a possible match is found the camera terminates the
+         scan and holds camera heading, pitch and roll on the possible match. in auto-scanning,
+         the frame is held stationary while the gimbal(and camera) vertically and horizontally sweeps an
+         environment until a target is found, causing the gimbal/camera to cease scanning and
+         hold the gimbals heading, pitch, and roll to the target.
+      * gimbal_directscan_and_hold (observation) (planned)
+         * A gimbal/camera application to visually direct-scan an environment for a known
+         target image/object. in direct-scan, the frame is moved by hand while the gimbal remains stationary
+         and fixed facing forward until a target is detected, causing the gimbal/camera to
+         modulate the heading, pitch, and roll to maintain the gimbal attitude/heading to the target.
+      * like_this, like_this_acquire, like_this_teach (all observation) (all planned).
+         * applications to use AI to find similar observations. first an observation is
+           made (like_this), then an environment is scanned (like_this_acquire) to allow the AI
+           to select things like 'this', then the AI selections are reviewed and corrected.
+           the process is repeated until the AI no longer requires teaching. this
+           action can be used to build a hotdog / not a hotdog detector.
+      * display_image (action)
+         * application to display a live or static image.
+      * send_email (action)
+         * application to send an email.
+      * call_ems (action)
+         * use a connected phone to dial and initiate an AI emergency services video call
+           with gimbal control where supported. emergency services need not be 911, fire,
+           or police and may be user defined. an AI emergency services call will also
+           allow Question and Answer between a user or the AI (if the user is incomunicado).
+           The AI will answer simple questions like: who needs assistance. it will also
+           allow verbal commands to be issued such as: 'look 90 degrees left' or 'say a phrase'.
+      * cause_and_effect_mixer_sequencer.
+         * link observations to actions.
+   * Layer 2 - Application library, Hardware Diagnostics.
+      * libSomaxApplication (planned)
+      * test_ahrs_coprocessor.
+      * test_joystick3d
+   * Layer 3 - IO libray, Hardware services, OS services, Somax services
+      * Input / Output Composition, Mixing and Sequencing Library (planned)
+      * libSomaxApplication (planned)
+      * service_ahrs_coprocessor.
+      * service_joystick3d.
+   * Layer 4 - Hardware abstraction library, OS abstraction library.
+      * libHardware
+      * libSomax (planned)
+   * Layer 5 - Hardware library. Operating System
+      * libHardware.
+
+
+
+At present the library does combine some aspects of abstraction with implementation. For
+example the RGB OLED driver has a SPI bus implementation yet to be converted to an
+abstraction such as i2c_interface. Those who are mixed, like RGB OLED driver, are being
+separated as they are modified for use within the application layer.
 #
-**Functional Description**
+**File Description**
 
-AHRSCAMD and AHRSFRAME are independent attitude, heading and reference systems. Unlike
-IMU's (inertial measurement units) which return raw acceleration and compass data,
-these sensors return compass heading, pitch and roll all in Euler degrees/radians
-or quanterions. Each sensor has an automatic calibration mode that is derived
-each time the sensors are powered up. Calibration and Euler angle calculation
-is possible from raw accelration and compass data using a sensor fusion algorithm.
-However, getting the algorithm right and efficient on an embedded platform can waste
-valueable developemnt & CPU cycles best used elsewhere.
+* Analog to Digital Conveter
+   * adc50.cpp, adc50.h
+* Attitude, Heading and Reference System (AHRS)
+   * ahrs.c, ahrs.h - hardware abstraction
+   * bno055.h, bno055.c - hardware device
+* 3D Joystick
+   * joystick3d_stick.c, joystick3d_stick.h - abstraction and device
+* Motor Controller
+   * atom_motor_controller.c, atom_motor_controller.h - abstraction and device
+   * mcu_motor_controller.c, mcu_motor_controller.h - abstraction and device
+* RGB LED light strip
+   * ledstrip-ws2812b.c, ledstrip-ws2812b.h - device
+* Microphone Array
+   * micarray-ics52000.c, micarray-ics52000.h - device
+* RGB OLED Display
+   * ssd1351.c, ssd1351.h - abstraction and device.
+* I2C
+   * i2c_interface.c, i2c_interface.h - abstraction
+* GPIO
+   * wire.cpp, wire.h - abstraction
+* Somax common values and functions
+   * somax.c, somax.h
 
-Each AHRS returns 16 bits of precision on each of the three axis monitored at
-100 samples per second.
 #
-**Operation**
+**Building**
 
-The driver is initialized with an I2C bus and address for each sensors. Once
-intialized the sensor will be powered up and ready for operation.
+* Build the library
+   * make
+* Delete the target and intermediary build files
+   * make clean
 
-To receive sensor data after initialization, define a callback function as
-defined in ahrs.h and pass it as an argument to the run function. The run function is
-blocking and will call the callback with updated orientation data when available.
-
-The driver test app can be invoked with one of three options:
-* info - Display configuration data for each sensor and exit.
-* test - Initalize the sensors and then print realtime orientation data for each sensors
-  until ctrl-c is pressed.
-* run - Accuate the motors and tilt the camera up until parallel with the frame pitch.
-  next, pan camera to face the rear of the frame. next tilt the camera up to an
-  angle where a human head might be if seated and controlling the joystick. next, allow
-  the camera position to be adjusted by joystick until the joystick button is pressed.
-  finally, when the joystick button is pressed record the orientation of the camera
-  and maintain it's heading, pitch, and roll no matter how the frame is re-oriented.
 #
 **Status**
-* September 10, 2018 - Sensors are operational and are sending heading, pitch, and roll
-  data for both frame and camera sensors. sensors are ready for handoff.
-* September 9, 2018 - Both sensors are talking to the host and are reporting register status
-  information. Next step is to configure the sensors and read data.
+* **September 20, 2018** - Library created. Ported ahrs_coprocessor and joystik3d.
+
 #
 
-
-| Specs      | Maker       |
-| ---------- | -------     |
-| Maker      | Bosch       |
-| Model      | BNO055      |
-| Voltage    | 3.3v        |
-| Power      | .3mA        |
-| Dimensions |	20x27 mm    |
-| Bus        | I2C         |
-| Frequency  | 400 kbits   |
-| Address    | 0x28        |
-&nbsp;
-
-**Strapping**
-
-None
-
-&nbsp;
-
-
-**Pin Map AHRSCAMD**
-
-|BNO055 Pin		| Edison Mini-Breakout Pin |
-|------------- | ------------------------- |
-| VIN          | 3.3 POWER     |
-| GND          | GND           |
-| SCL          | I2C6	SCL    |
-| SDA          | I2C6	SDA    |
-| RST          | NC            |
-| INT          | NC            |
-| ADR          | NC            |
-| PS0          | NC            |
-| PS1          | NC            |
-
-**Pin Map AHRSFRAME**
-
-|BNO055 Pin		| Edison Mini-Breakout Pin |
-|------------- | ------------------------- |
-| VIN          | 3.3 POWER     |
-| GND          | GND           |
-| SCL          | I2C1	SCL    |
-| SDA          | I2C1	SDA    |
-| RST          | NC            |
-| INT          | NC            |
-| ADR          | NC            |
-| PS0          | NC            |
-| PS1          | NC            |
-&nbsp;
 

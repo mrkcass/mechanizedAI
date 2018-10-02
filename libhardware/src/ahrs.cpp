@@ -14,10 +14,12 @@ static const char ahrs_names[][32] =
 
 static AHRS_EULER_CALLBACK outputdata_euler_callbk;
 static AHRS_QUATERNION_CALLBACK outputdata_quaternion_callbk;
+static AHRS_MAGNETOMETER_CALLBACK outputdata_magnetometer_callbk;
 static int ahrs_bno055_id_map[] = {0, BNO_DEVICE_FRAME, BNO_DEVICE_CAMD};
 
 static void ahrs_test_euler_callback(ahrs_context ahrs, float heading, float pitch, float roll);
 static void ahrs_test_quaternion_callback(ahrs_context ahrs, float w, float x, float y, float z);
+static void ahrs_test_magnetometer_callback(ahrs_context ahrs, int mag_x, int mag_y, int mag_z);
 
 
 ahrs_context ahrs_open(ahrs_id id)
@@ -46,13 +48,15 @@ int ahrs_test(int output_format)
 {
    printf("starting test: \n");
    if (output_format == AHRS_OUTPUTFORMAT_EULER)
-      ahrs_run(ahrs_test_euler_callback, NULL);
+      ahrs_run(ahrs_test_euler_callback, NULL, NULL);
    else if (output_format == AHRS_OUTPUTFORMAT_QUATERNION)
-      ahrs_run(NULL, ahrs_test_quaternion_callback);
+      ahrs_run(NULL, ahrs_test_quaternion_callback, NULL);
+   else if (output_format == AHRS_OUTPUTFORMAT_MAGNETOMETER)
+      ahrs_run(NULL, NULL, ahrs_test_magnetometer_callback);
    return 1;
 }
 
-int ahrs_run(AHRS_EULER_CALLBACK euler_callbk, AHRS_QUATERNION_CALLBACK quaternion_callbk)
+int ahrs_run(AHRS_EULER_CALLBACK euler_callbk, AHRS_QUATERNION_CALLBACK quaternion_callbk, AHRS_MAGNETOMETER_CALLBACK magnetometer_callbk)
 {
    outputdata_euler_callbk = NULL;
    outputdata_quaternion_callbk = NULL;
@@ -64,9 +68,14 @@ int ahrs_run(AHRS_EULER_CALLBACK euler_callbk, AHRS_QUATERNION_CALLBACK quaterni
    }
    else if (quaternion_callbk != NULL)
    {
-      printf("debug 100\n");
       outputdata_quaternion_callbk = quaternion_callbk;
       bno055_output_callbk_quaternion(NULL, outputdata_quaternion_callbk);
+   }
+   else if (magnetometer_callbk != NULL)
+   {
+      printf("debug 100\n");
+      outputdata_magnetometer_callbk = magnetometer_callbk;
+      bno055_output_callbk_magnetometer(NULL, outputdata_magnetometer_callbk);
    }
    else
       return 0;
@@ -184,4 +193,20 @@ static void ahrs_test_quaternion_callback(ahrs_context ahrs, float w, float x, f
    float heading, pitch, roll;
    ahrs_quaternion_to_euler(w, x, y, z, &heading, &pitch, &roll);
    ahrs_test_euler_callback(ahrs, heading, pitch, roll);
+}
+
+static void ahrs_test_magnetometer_callback(ahrs_context ahrs, int mag_x, int mag_y, int mag_z)
+{
+   static int current[AHRS_NUM_DEVICES + 1][AHRS_NUM_AXIS];
+
+   int device_id = ahrs_context_to_id(ahrs);
+
+   current[device_id][0] = mag_x;
+   current[device_id][1] = mag_y;
+   current[device_id][2] = mag_z;
+
+   printf("FC-MAGx[%+5d|%+5d] FC-MAGy[%+5d|%+5d] FC-MAGz[%+5d|%+5d]         \r",
+          current[AHRS_ID_FRAME][0], current[AHRS_ID_CAMD][0],
+          current[AHRS_ID_FRAME][1], current[AHRS_ID_CAMD][1],
+          current[AHRS_ID_FRAME][2], current[AHRS_ID_CAMD][2]);
 }
