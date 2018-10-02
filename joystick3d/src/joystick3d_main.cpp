@@ -189,14 +189,21 @@ int joy3d_sample_button()
 static char POWER_ON_CMD[]  =  "poweron       \n";
 static char POWER_OFF_CMD[] =  "poweroff      \n";
 static char SPEED_CMD[] = "speed%c%s%02d      \n";
+static char STEP_CMD[] = "step%c%s%02d%04d   \n";
+static char POSITION_CMD[] = "position   \n";
 static char ZERO_SPEED[] = "+";
 static char NEGATIVE_SPEED[] = "-";
 static char POSITIVE_SPEED[] = "+";
 static bool stick_enabled = false;
+int open_speed = 1;
+#define MOTOR_PAN    0
+#define MOTOR_TILT   1
+#define MOTOR_ROTATE 2
 int mcu_process_message(char *msg, char *reply);
 void joy3d_notify_motor_controller(int motor, int speed)
 {
-   char speed_cmd[16];
+   char motor_cmd[16];
+   char motor_reply[16];
    char motor_id[4] = "XYZ";
 
    if (motor == NUM_AXIS && speed != 1)
@@ -208,15 +215,49 @@ void joy3d_notify_motor_controller(int motor, int speed)
       if (stick_enabled)
       {
          printf("JOY3D: stick disabled. powering off motors\n");
-         sprintf(speed_cmd, POWER_OFF_CMD);
+         sprintf(motor_cmd, POWER_OFF_CMD);
          stick_enabled = false;
-         mcu_process_message(speed_cmd, NULL);
+         mcu_process_message(motor_cmd, NULL);
       }
       else
       {
          printf("JOY3D: stick enabled. powering on motors\n");
-         sprintf(speed_cmd, POWER_ON_CMD);
-         mcu_process_message(speed_cmd, NULL);
+         sprintf(motor_cmd, POWER_ON_CMD);
+         mcu_process_message(motor_cmd, NULL);
+         sprintf(motor_cmd, STEP_CMD, motor_id[MOTOR_TILT], NEGATIVE_SPEED, 1, 50);
+         mcu_process_message(motor_cmd, NULL);
+         while (1)
+         {
+            mcu_process_message(POSITION_CMD, motor_reply);
+            int pos_x, pos_y, pos_z;
+            pos_x = pos_y = pos_z = 0;
+            sscanf(motor_reply, "%03d %03d %03d\n", &pos_x, &pos_y, &pos_z);
+            if (pos_y == -50)
+               break;
+         }
+         sprintf(motor_cmd, STEP_CMD, motor_id[MOTOR_PAN], NEGATIVE_SPEED, 1, 50);
+         mcu_process_message(motor_cmd, NULL);
+         while (1)
+         {
+            mcu_process_message(POSITION_CMD, motor_reply);
+            int pos_x, pos_y, pos_z;
+            pos_x = pos_y = pos_z = 0;
+            sscanf(motor_reply, "%03d %03d %03d\n", &pos_x, &pos_y, &pos_z);
+            if (pos_x == -50)
+               break;
+         }
+         sprintf(motor_cmd, STEP_CMD, motor_id[MOTOR_TILT], NEGATIVE_SPEED, 1, 20);
+         mcu_process_message(motor_cmd, NULL);
+         while (1)
+         {
+            usleep(50 * U_MILLISECOND);
+            mcu_process_message(POSITION_CMD, motor_reply);
+            int pos_x, pos_y, pos_z;
+            pos_x = pos_y = pos_z = 0;
+            sscanf(motor_reply, "%03d %03d %03d\n", &pos_x, &pos_y, &pos_z);
+            if (pos_y == -70)
+               break;
+         }
          stick_enabled = true;
       }
 
@@ -224,12 +265,12 @@ void joy3d_notify_motor_controller(int motor, int speed)
    else if (stick_enabled)
    {
       if (speed == 0)
-         sprintf(speed_cmd, SPEED_CMD, motor_id[motor], ZERO_SPEED, 0);
+         sprintf(motor_cmd, SPEED_CMD, motor_id[motor], ZERO_SPEED, 0);
       else if (speed < 0)
-         sprintf(speed_cmd, SPEED_CMD, motor_id[motor], NEGATIVE_SPEED, -speed);
+         sprintf(motor_cmd, SPEED_CMD, motor_id[motor], NEGATIVE_SPEED, -speed);
       else
-         sprintf(speed_cmd, SPEED_CMD, motor_id[motor], POSITIVE_SPEED, speed);
-      mcu_process_message(speed_cmd, NULL);
+         sprintf(motor_cmd, SPEED_CMD, motor_id[motor], POSITIVE_SPEED, speed);
+      mcu_process_message(motor_cmd, NULL);
    }
 }
 

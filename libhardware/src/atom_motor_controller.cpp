@@ -6,6 +6,7 @@
 #include "pthread.h"
 
 #define NUM_MOTORS   3
+#define STEPS_PER_REVOLUTION 200
 #define MIN_PHASE    0
 #define MAX_PHASE    3
 #define NUM_PHASE    4
@@ -28,6 +29,19 @@
 #define SPEED_1X        8
 #define SPEED_MOTORID   5
 
+//command format to step the motor.
+//command format: "STEP", axis, speed, steps
+//STEP[XYZ][+-][0-9]{2}[0-9]{4}
+#define STEPCMD_MOTORID       4
+#define STEPCMD_SPEED_SIGN    5
+#define STEPCMD_SPEED_10X     6
+#define STEPCMD_SPEED_1X      7
+#define STEPCMD_STEPS_1000X   8
+#define STEPCMD_STEPS_100X    9
+#define STEPCMD_STEPS_10X     10
+#define STEPCMD_STEPS_1X      11
+
+
 #define GPIO_MTRPAN_IN1     13
 #define GPIO_MTRPAN_IN2     165
 #define GPIO_MTRPAN_IN3     12
@@ -43,7 +57,7 @@
 #define GPIO_MTRROTATE_IN3  129
 #define GPIO_MTRROTATE_IN4  131
 
-#define IDLE_PWM_RATE         4UL
+#define IDLE_PWM_RATE         3UL
 #define POWER_ON_INTERVAL_MS  500
 
 
@@ -74,6 +88,9 @@ unsigned long motor_countdowntimer[NUM_MOTORS] = {2000, 2000, 2000};
 unsigned long motor_idle_pwm_rate[NUM_MOTORS] = {IDLE_PWM_RATE, IDLE_PWM_RATE, IDLE_PWM_RATE};
 unsigned long motor_idle_pwm[NUM_MOTORS] = {0, 0, 0};
 unsigned long motor_countdowntimes_lasttime[NUM_MOTORS] = {0, 0, 0};
+int motor_step_countdown[NUM_MOTORS] = {0, 0, 0};
+int motor_steps_per_revolution[NUM_MOTORS] = {200, 200, 200};
+int motor_steps_from_home[NUM_MOTORS] = {0, 0, 0};
 struct Wire gpio_lines[12];
 int power_state[NUM_MOTORS] = {POWER_OFF, POWER_OFF, POWER_OFF};
 
@@ -239,6 +256,19 @@ void move_motor(int motor_id)
       motor_countdowntimer[motor_id] = motor_speed_delay[motor_speed[motor_id] + MOTOR_DELAY_IDX_0_POWER][motor_id];
       //printf("timeout: %lu %d\n", motor_countdowntimer[motor_id], motor_speed[motor_id] + MOTOR_DELAY_IDX_0_POWER);
       change_motor_phase(motor_id);
+      if (motor_speed[motor_id])
+      {
+         motor_steps_from_home[motor_id] += motor_speed[motor_id] > 0 ? 1 : -1;
+         if (motor_step_countdown[motor_id])
+         {
+            motor_step_countdown[motor_id]--;
+            if (motor_step_countdown[motor_id] <= 0)
+            {
+               printf("motor stepping complete [%+3d] [%+3d] [%+3d]\n", motor_steps_from_home[0], motor_steps_from_home[1], motor_steps_from_home[2]);
+               motor_speed[motor_id] = 0;
+            }
+         }
+      }
    }
    else
    {
@@ -301,17 +331,75 @@ int mcu_process_message(char *msg, char *reply)
          speed *= -1;
       }
 
-      //printf("motor speed now = %d -> %s", speed, msg);
-      if (msg[SPEED_MOTORID] == 'X')
-         motor_speed[MOTOR_PAN] = speed;
-      else if (msg[SPEED_MOTORID] == 'Y')
-         motor_speed[MOTOR_TILT] = speed;
-      else if (msg[SPEED_MOTORID] == 'Z')
-         motor_speed[MOTOR_ROTATE] = speed;
+      printf("motor speed now = %d -> %s", speed, msg);
+      if (speed == 0)
+      {
+         if (msg[SPEED_MOTORID] == 'X')
+            motor_step_countdown[MOTOR_PAN] = 1;
+         else if (msg[SPEED_MOTORID] == 'Y')
+            motor_step_countdown[MOTOR_TILT] = 1;
+         else if (msg[SPEED_MOTORID] == 'Z')
+            motor_step_countdown[MOTOR_ROTATE] = 1;
+      }
+      else
+      {
+         if (msg[SPEED_MOTORID] == 'X')
+            motor_speed[MOTOR_PAN] = speed;
+         else if (msg[SPEED_MOTORID] == 'Y')
+            motor_speed[MOTOR_TILT] = speed;
+         else if (msg[SPEED_MOTORID] == 'Z')
+            motor_speed[MOTOR_ROTATE] = speed;
+      }
 
       processed = 1;
    }
+   else if (!processed && msg[0] == 's' && msg[3] == 'p')
+   {
+      //step command format "step[X|Y|Z][+|-]NNSSSS"
+      //NN = speed
+      //SSSS = steps
 
+      int sign = msg[STEPCMD_SPEED_SIGN];
+      int speedx10 = msg[STEPCMD_SPEED_10X] - '0';
+      int speedx1 = msg[STEPCMD_SPEED_1X] - '0';
+      int stepsx1000 = msg[STEPCMD_STEPS_1000X] - '0';
+      int stepsx100 = msg[STEPCMD_STEPS_100X] - '0';
+      int stepsx10 = msg[STEPCMD_STEPS_10X] - '0';
+      int stepsx1 = msg[STEPCMD_STEPS_1X] - '0';
+
+      int speed = (10 * speedx10) + speedx1;
+      int steps = (1000 * stepsx1000) + (100 * stepsx100)+ (10 * stepsx10) + stepsx1;
+
+      if (sign == '-')
+      {
+         speed *= -1;
+      }
+
+      printf("stepping motor id[%c] speed[%+02d] steps[%04d]\n", msg[STEPCMD_MOTORID], speed, steps);
+      if (msg[STEPCMD_MOTORID] == 'X')
+      {
+         motor_step_countdown[MOTOR_PAN] = steps;
+         motor_speed[MOTOR_PAN] = speed;
+      }
+      else if (msg[STEPCMD_MOTORID] == 'Y')
+      {
+         motor_step_countdown[MOTOR_TILT] = steps;
+         motor_speed[MOTOR_TILT] = speed;
+      }
+      else if (msg[STEPCMD_MOTORID] == 'Z')
+      {
+         motor_step_countdown[MOTOR_ROTATE] = steps;
+         motor_speed[MOTOR_ROTATE] = speed;
+      }
+
+      processed = 1;
+   }
+   else if (!processed && msg[0] == 'p' && msg[1] == 'o' && msg[2] == 's')
+   {
+      sprintf(reply, "%+03d %+03d %+03d\n", motor_steps_from_home[0], motor_steps_from_home[1], motor_steps_from_home[2]);
+
+      processed = 1;
+   }
    return processed;
 }
 
