@@ -112,7 +112,7 @@ void write_reset(mraa_gpio_context gpio, int *bitcounter)
     //int bit_rate_scaler = 8;
     // int wfactor = 1;
     // int bfactor = 3;
-    int hi = 1, lo = 0;
+    int lo = 0;
 
     //while (1)
     {
