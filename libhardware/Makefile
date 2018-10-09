@@ -12,7 +12,8 @@ OBJECT_FILES = ahrs.o						\
 					micarray-ics52000.o		\
 					wire.o 						\
 					i2c_interface.o 			\
-					somax.o
+					somax.o						\
+					libhardware.o
 
 SRC_DIR = src
 OBJ_DIR = build
