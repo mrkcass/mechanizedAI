@@ -1,29 +1,66 @@
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// author: mark cass
+// project: somax personal AI
+// project url: https://mechanizedai.com
+// license: open source and free for all uses without encumbrance.
+//
+// FILE: i2c_interface.cpp
+// DESCRIPTION: Interface for I2C bus communication.
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 #include <stdio.h>
 
 #include "mraa.h"
 #include "mraa/i2c.h"
 
+#include "somax.h"
 #include "i2c_interface.h"
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//CONSTANTS
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 #define TEST_REG_ERROR -1
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//DATA STRUCTURES
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 struct I2C_CONTEXT
 {
     int bus_id;
     int device_id;
 };
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//DATA
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 static char frequency_str[][32] = {
     "FREQUENCY_100KHZ",
     "FREQUENCY_400KHZ",
     "FREQUENCY_3400KHZ"
 };
 
-static int i2c_bus_map[NUM_I2C_BUSES] = {1, 6};
+static int i2c_bus_map[SOMAX_NUM_MAINBOARDS+1][NUM_I2C_BUSES] =
+{
+   {0, 0},
+   {1, 6},
+   {0, 0}
+};
 static int i2c_bus_context_count[NUM_I2C_BUSES] = {0, 0};
 static mraa_i2c_context i2c_bus[NUM_I2C_BUSES];
 static struct I2C_CONTEXT contexts[MAX_I2C_CONTEXTS];
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//PUBLIC FUNCTIONS
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 static void i2c_detect_devices(int bus);
 static mraa_result_t i2c_get(int bus, uint8_t device_address, uint8_t register_address, uint8_t* data);
 static int i2c_latch_device(i2c_context i2c);
@@ -32,7 +69,7 @@ static int i2c_latch_device(i2c_context i2c);
 i2c_context i2c_open(int i2c_bus_num, int device_address)
 {
    if (i2c_bus[i2c_bus_num] == 0)
-      i2c_bus[i2c_bus_num] = mraa_i2c_init(i2c_bus_map[i2c_bus_num]);
+      i2c_bus[i2c_bus_num] = mraa_i2c_init(i2c_bus_map[somax_mainboard_id()][i2c_bus_num]);
 
    if (i2c_bus[i2c_bus_num] == NULL)
    {
@@ -101,6 +138,18 @@ int i2c_set_frequency(i2c_context i2c, int i2c_frequency_id)
    }
    printf("i2c_interface[I2C-%d]: frequency set to %s\n", i2c->bus_id, frequency_str[i2c_frequency_id]);
    return i2c_frequency_id;
+}
+
+//returns -1 when the bus id is not known, the mainboard bus id otherwise.
+int i2c_somax_bus_id_to_mainboard_id(int somax_i2c_busid)
+{
+   if (somax_i2c_busid < 0 || somax_i2c_busid >= NUM_I2C_BUSES)
+   {
+      somax_log_add(SOMAX_LOG_ERR, "i2c mainboard bus lookup out of range: %d", somax_i2c_busid);
+      return -1;
+   }
+
+   return i2c_bus_map[somax_mainboard_id()][somax_i2c_busid];
 }
 
 int i2c_dev_read_byte(i2c_context i2c)
@@ -335,7 +384,7 @@ void debug(int argc, char **argv)
    mraa_init();
 
    mraa_i2c_context i2c;
-   i2c = mraa_i2c_init(i2c_bus_map[bus]);
+   i2c = mraa_i2c_init(i2c_bus_map[somax_mainboard_id()][bus]);
 
    i2c_detect_devices(bus);
 
@@ -347,10 +396,16 @@ void debug(int argc, char **argv)
    exit(0);
 }
 
-void i2c_detect_devices(int bus)
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//PRIVATE FUNCTIONS
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+static void i2c_detect_devices(int bus)
 {
    int addr;
-   for (addr = 0x0; addr < 0x80; ++addr) {
+   for (addr = 0x0; addr < 0x80; ++addr)
+   {
       uint8_t value;
       if ((addr) % 16 == 0)
          printf("%02x: ", addr);
@@ -360,7 +415,7 @@ void i2c_detect_devices(int bus)
          printf("-- ");
       if ((addr + 1) % 16 == 0)
          printf("\n");
-}
+   }
 }
 
 static int i2c_latch_device(i2c_context i2c)
@@ -384,7 +439,7 @@ static int i2c_latch_device(i2c_context i2c)
 static mraa_result_t i2c_get(int bus, uint8_t device_address, uint8_t register_address, uint8_t* data)
 {
    mraa_result_t status = MRAA_SUCCESS;
-   mraa_i2c_context i2c = mraa_i2c_init(i2c_bus_map[bus]);
+   mraa_i2c_context i2c = mraa_i2c_init(i2c_bus_map[somax_mainboard_id()][bus]);
    if (i2c == NULL) {
       return MRAA_ERROR_NO_RESOURCES;
    }
