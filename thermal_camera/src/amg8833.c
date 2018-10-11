@@ -12,13 +12,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include "amg8833.h"
 #include "somax.h"
 #include "i2c_interface.h"
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-//AMG8833 registers
+//AMG8833 registers and configuration constants / data
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //power control register
@@ -85,7 +86,14 @@ static const char amg_interruptmode_strings[][32] =
 #define AMG_THERMRESISTORMSB_SIGN_BSHIFT  3
 #define AMG_THERMRESISTORMSB_MSB_BMASK    0b00000111
 #define AMG_THERMRESISTORMSB_MSB_BSHIFT   0
-#define AMG_THERMRESISTORMSB_RESOLUTION   .0625
+#define AMG_THERMRESISTOR_RESOLUTION      .0625
+
+//pixel data registers
+#define AMG_BYTES_PER_PIXEL           2
+#define AMG_REG_PIXEL_ROW_0           0x80
+#define AMG_RAWPIXEL_SIGN_BITMASK     0b0000100000000000
+#define AMG_RAWPIXEL_VALUE_BITMASK    0b0000011111111111
+
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -93,6 +101,7 @@ static const char amg_interruptmode_strings[][32] =
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 #define AMG8833_MAX_CONTEXTS 16
+
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -110,10 +119,14 @@ struct AMG8833_DEVICE_PROPERTIES
 struct AMG8833_CONTEXT
 {
    i2c_context i2c;
+   int context_id;
    amg8833_id device_id;
-   //AHRS_EULER_CALLBACK euler_observer;
-   //AHRS_QUATERNION_CALLBACK quaternion_observer;
-   //AHRS_MAGNETOMETER_CALLBACK magnetometer_observer;
+   AMG8833_FRAMEDATA_CALLBACK framedata_observer;
+   int num_frames;
+   int frame_counter;
+   uint8_t * frame_buffer_raw;
+   float * frame_buffer;
+   bool using_external_framebuffer;
 };
 
 //------------------------------------------------------------------------------
@@ -124,34 +137,44 @@ struct AMG8833_CONTEXT
 static struct AMG8833_DEVICE_PROPERTIES amg8833_devices[AMG8833_NUM_DEVICES] =
 {
    {
-      AMG8833_DEVICE_1,
-      "AMG8833_DEVICE_1",
+      AMG8833_DEVICEID_1,
+      "AMG8833_DEVICEID_1",
       I2C_BUSID_1,
       0x69,
    },
 };
 
 static struct AMG8833_CONTEXT contexts[AMG8833_MAX_CONTEXTS];
-static const char pwr_mode_strings[][32] =
-{
-   "AMG8833_PWR_MODE_NORM",
-   "AMG8833_PWR_MODE_STANBY",
-   "AMG8833_PWR_MODE_SLEEP",
-};
+static int amg8833_num_contexts;
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //PUBLIC FUNCTIONS
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+static void amg8833_run_update_framedata_observer(int context_id);
+
 amg8833_context amg8833_open(amg8833_id id)
 {
-   struct AMG8833_CONTEXT* ctx = &contexts[id];
+   if (amg8833_num_contexts >= AMG8833_MAX_CONTEXTS)
+   {
+      somax_log_add(SOMAX_LOG_ERR, "AMG8833 : Open failed. No free contexts slots.");
+      return AMG8833_NULL_CONTEXT;
+   }
 
+   if (id < 0 || id > AMG8833_NUM_DEVICES)
+   {
+      somax_log_add(SOMAX_LOG_ERR, "AMG8833 : Open failed. Unknown device id %d.", id);
+      return AMG8833_NULL_CONTEXT;
+   }
+
+   struct AMG8833_CONTEXT* ctx = &contexts[amg8833_num_contexts];
+   ctx->context_id = amg8833_num_contexts;
    ctx->i2c = i2c_open(amg8833_devices[id].i2c_bus, amg8833_devices[id].i2c_address);
    ctx->device_id = id;
 
    i2c_set_frequency(ctx->i2c, I2C_FREQUENCY_400KHZ);
+
    i2c_reg_write_byte(ctx->i2c, AMG_REG_RESET, AMG_RESET_HARD);
    usleep(10 * U_MILLISECOND);
    i2c_reg_write_byte(ctx->i2c, AMG_REG_POWER_CONTROL, AMG_POWER_MODE_NORMAL);
@@ -159,6 +182,7 @@ amg8833_context amg8833_open(amg8833_id id)
    i2c_reg_write_byte(ctx->i2c, AMG_REG_POWER_CONTROL, AMG_POWER_MODE_SLEEP);
    usleep(100 * U_MILLISECOND);
 
+   amg8833_num_contexts++;
    return ctx;
 }
 
@@ -166,8 +190,12 @@ void amg8833_close(amg8833_context ctx)
 {
    if (ctx == NULL)
       return;
-
+   if (ctx->frame_buffer_raw)
+      free (ctx->frame_buffer_raw);
+   if (ctx->frame_buffer && !ctx->using_external_framebuffer)
+      free(ctx->frame_buffer);
    memset(ctx, 0, sizeof(struct AMG8833_CONTEXT));
+   amg8833_num_contexts--;
 }
 
 void amg8833_info(amg8833_context ctx)
@@ -214,12 +242,67 @@ float amg8833_device_temperature(amg8833_context ctx)
    int sign = data[1] & AMG_THERMRESISTORMSB_SIGN_BMASK;
    int temp_msb = data[1] & AMG_THERMRESISTORMSB_MSB_BMASK;
    int temp = temp_msb << 1 | data[0];
-   float ftemp = (float)temp * AMG_THERMRESISTORMSB_RESOLUTION;
+   float ftemp = (float)temp * AMG_THERMRESISTOR_RESOLUTION;
 
    if (sign)
       return -ftemp;
 
    return ftemp;
+}
+
+// Specifiy a function to be called when an updated pixel data is ready.
+// PARAM: ctx - AMG8833 context.
+// PARAM: callback - function to call when a new frame of pixels is ready
+// PARAM: frame_buffer - a data buffer that will hold new frame pixel data. if not
+//           provided, a buffer will be allocated using malloc which will be sent to
+//           the observer by way of 'callbk'. any buffer provided, no matter the storage
+//           class is the property of the caller and should be destroyed accordingly
+//
+//if callback bufffer is NULL, use the driver buffer.
+void amg8833_output_callbk_framedata(amg8833_context ctx, AMG8833_FRAMEDATA_CALLBACK callbk, AMG8833_FRAMEDATA_BUFFER frame_buffer)
+{
+   ctx->framedata_observer = callbk;
+   if (frame_buffer && ctx->frame_buffer && !ctx->using_external_framebuffer)
+      free(ctx->frame_buffer);
+   if (frame_buffer)
+   {
+      ctx->frame_buffer = frame_buffer;
+      ctx->using_external_framebuffer = true;
+   }
+   else if (!ctx->frame_buffer)
+   {
+      ctx->frame_buffer = (float *)malloc(AMG8833_ARRAY_SIZE * sizeof(float));
+   }
+
+   if (!ctx->frame_buffer_raw)
+      ctx->frame_buffer_raw = (uint8_t *)malloc(AMG8833_ARRAY_SIZE * AMG_BYTES_PER_PIXEL);
+}
+
+// blocking call that runs an observer update loop.
+// PARAM: amg8833 - AMG8833 context
+// PARAM: num_frames - number of frames to operate over
+// RETURN: 1 if the stopped before num_frames were returned. 0 otherwise.
+int amg8833_run(amg8833_context amg8833, int num_frames)
+{
+   amg8833->num_frames = num_frames;
+
+   while (amg8833->frame_counter < amg8833->num_frames || amg8833->num_frames == AMG8833_NUMFRAMES_ALL)
+   {
+      usleep(100 * 1000);
+      if (!amg8833->framedata_observer)
+         return 1;
+      amg8833_run_update_framedata_observer(amg8833->context_id);
+      amg8833->frame_counter++;
+   }
+   return 0;
+}
+
+void amg8833_stop(amg8833_context amg8833, bool stop_framedata)
+{
+   if (stop_framedata)
+   {
+      amg8833->framedata_observer = AMG8833_NULL_CONTEXT;
+   }
 }
 
 bool amg8833_interrupts_enabled(amg8833_context ctx)
@@ -246,3 +329,30 @@ amg8833_id amg8833_context_to_id(amg8833_context ctx)
 //PRIVATE FUNCTIONS
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+static void amg8833_run_update_framedata_observer(int context_id)
+{
+   amg8833_context ctx = &contexts[context_id];
+
+   for (int row = 0; row < AMG8833_ARRAY_HEIGHT; row++)
+   {
+      i2c_reg_read_many(ctx->i2c,
+                        AMG_REG_PIXEL_ROW_0 + (row * AMG8833_ARRAY_WIDTH * AMG_BYTES_PER_PIXEL),
+                        &ctx->frame_buffer_raw[row * AMG8833_ARRAY_WIDTH * AMG_BYTES_PER_PIXEL],
+                        AMG8833_ARRAY_WIDTH * AMG_BYTES_PER_PIXEL);
+   }
+
+   for (int row = 0; row < AMG8833_ARRAY_HEIGHT; row++)
+   {
+      for (int col = 0; col < AMG8833_ARRAY_WIDTH; col++)
+      {
+         int raw_lsb_index = (row * AMG8833_ARRAY_WIDTH * AMG_BYTES_PER_PIXEL) + (col * AMG_BYTES_PER_PIXEL);
+         uint16_t raw = ctx->frame_buffer_raw[raw_lsb_index + 1] << 8 | ctx->frame_buffer_raw[raw_lsb_index];
+         float converted = (float)(raw & AMG_RAWPIXEL_VALUE_BITMASK);
+         converted *= raw & AMG_RAWPIXEL_SIGN_BITMASK ? -1.0 : 1.0;
+         ctx->frame_buffer[raw_lsb_index / 2] = converted;
+      }
+   }
+
+   if (ctx->framedata_observer)
+      ctx->framedata_observer(ctx, ctx->frame_buffer);
+}

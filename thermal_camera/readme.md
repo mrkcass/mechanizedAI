@@ -4,8 +4,8 @@ Infrared Thermal 8x8 Sensor Array
 #
 **Functional Description**
 THERMCAM is a 64 pixel thermal camera mounted at the center of the gimbal camera mount.
-The camera can detect temperature differences between 0 and 80 degrees celcius with
-n +/- 2.5 degree celcius accuracy. The sensor is arranged as an array in a square 8x8
+The camera can detect temperature differences between 0 and 80 degrees celsius with
+n +/- 2.5 degree celsius accuracy. The sensor is arranged as an array in a square 8x8
 orientation. Data and configuration is transmitted and received over
 I2C at a maximum rate of 400 kbits per second. The sensor array is updated at 10 hz.
 and can be configured to provide an interupt when motion is detected. Data is returned
@@ -14,7 +14,13 @@ easily see individual human fingers at shrt ranges and can identify a human at u
 7 meters distance. The sensors tracking ability can be improved with distance calibration
 data like that provided by CAMPROX.
 
-
+The datasheet mentions that the following conditions can adversely affect operational
+performance.
+*  heat emitting body located close to sensor.
+*  warm or cold air flowing across sensor
+*  sudden changes in sensor temperature.
+*  line of sight interference by transparent objects like glass or acrylic.
+*  Dirty or wet sensor.
 #
 **Operation**
 
@@ -32,7 +38,13 @@ options.
 * run-sleep - Initialize the sensor and start the sensor in low power sleep mode.
 #
 **Status**
-* **October 7, 2018 - Created initial driver.
+* **October 7, 2018** - Created initial driver.
+* **October 11, 2018** - Driver is talking to the sensor and aquiring pixel data. the
+   test-console function is implemented and the test-oled will be in next which should go
+   fast. I have intermittent I2C bus hang ups when reading from the sensor.
+   I beleive this do to a bad connection. Will track it down tomorrow. also seeing higher
+   than expected temperature values, probably a conversion math issue that i have on the
+   todo list.
 #
 
 
