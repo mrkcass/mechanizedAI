@@ -5,6 +5,8 @@ PROJ_NAME=libhardware.a
 OBJECT_FILES = ahrs.o						\
 					adc50.o						\
 					bno055.o						\
+					thermalcamera.o			\
+					amg8833.o					\
 					joystick3d_stick.o 		\
 					mcu_motor_controller.o 	\
 					atom_motor_controller.o \

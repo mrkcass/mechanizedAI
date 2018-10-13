@@ -39,9 +39,11 @@ static const char amg_pwr_mode_strings[][32] =
 #define AMG_REG_RESET                  0x01
 #define AMG_RESET_HARD                 0x3F
 #define AMG_RESET_SOFT                 0x30
+#define AMG_RESETTIME_MILLISEC         50
 //frame rate register
 #define AMG_REG_FRAMERATE              0x02
 #define AMG_FRAMERATE_BMASK            0b00000001
+#define AMG_FRAMERATE_BCOUNT           1
 #define AMG_FRAMERATE_BSHIFT           0
 #define AMG_FRAMERATE_10FPS            0x00
 #define AMG_FRAMERATE_1FPS             0x01
@@ -74,6 +76,7 @@ static const char amg_interruptmode_strings[][32] =
 #define AMG_REG_STATUS                 0x04
    //interrupt status accumulator bits
 #define AMG_INT_MODE_BMASK             0b00000010
+#define AMG_INT_MODE_BCOUNT            1
 #define AMG_INT_MODE_BSHIFT            1
 #define AMG_INT_NOTRAISED              0x00
 #define AMG_INT_RAISED                 0x01
@@ -88,11 +91,25 @@ static const char amg_interruptmode_strings[][32] =
 #define AMG_THERMRESISTORMSB_MSB_BSHIFT   0
 #define AMG_THERMRESISTOR_RESOLUTION      .0625
 
+//moving average register
+#define AMG_REG_MOVING_AVG                0x07
+#define AMG_MOVING_AVG_BMASK              0b00100000
+#define AMG_MOVING_AVG_BCOUNT             1
+#define AMG_MOVING_AVG_BSHIFT             4
+static const char amg_movingavg_strings[][32] =
+{
+   "disabled",
+   "enabled",
+};
+
+
 //pixel data registers
 #define AMG_BYTES_PER_PIXEL           2
 #define AMG_REG_PIXEL_ROW_0           0x80
 #define AMG_RAWPIXEL_SIGN_BITMASK     0b0000100000000000
 #define AMG_RAWPIXEL_VALUE_BITMASK    0b0000011111111111
+
+
 
 
 //------------------------------------------------------------------------------
@@ -121,12 +138,14 @@ struct AMG8833_CONTEXT
    i2c_context i2c;
    int context_id;
    amg8833_id device_id;
-   AMG8833_FRAMEDATA_CALLBACK framedata_observer;
+   amg8833_framedata_callback framedata_observer;
+   int framedata_observer_callbk_id;
    int num_frames;
    int frame_counter;
    uint8_t * frame_buffer_raw;
    float * frame_buffer;
    bool using_external_framebuffer;
+   unsigned char output_units;
 };
 
 //------------------------------------------------------------------------------
@@ -140,7 +159,7 @@ static struct AMG8833_DEVICE_PROPERTIES amg8833_devices[AMG8833_NUM_DEVICES] =
       AMG8833_DEVICEID_1,
       "AMG8833_DEVICEID_1",
       I2C_BUSID_1,
-      0x69,
+      0x68,
    },
 };
 
@@ -173,14 +192,11 @@ amg8833_context amg8833_open(amg8833_id id)
    ctx->i2c = i2c_open(amg8833_devices[id].i2c_bus, amg8833_devices[id].i2c_address);
    ctx->device_id = id;
 
-   //i2c_set_frequency(ctx->i2c, I2C_FREQUENCY_400KHZ);
-
+   i2c_set_frequency(ctx->i2c, I2C_FREQUENCY_400KHZ);
 
    i2c_reg_write_byte(ctx->i2c, AMG_REG_RESET, AMG_RESET_HARD);
-   usleep(10 * U_MILLISECOND);
+   usleep(AMG_RESETTIME_MILLISEC * U_MILLISECOND);
    i2c_reg_write_byte(ctx->i2c, AMG_REG_POWER_CONTROL, AMG_POWER_MODE_NORMAL);
-   usleep(10 * U_MILLISECOND);
-   //i2c_reg_write_byte(ctx->i2c, AMG_REG_POWER_CONTROL, AMG_POWER_MODE_SLEEP);
    usleep(100 * U_MILLISECOND);
 
    amg8833_num_contexts++;
@@ -221,21 +237,27 @@ void amg8833_info(amg8833_context ctx)
       powermode = 2 + (powermode & AMG_POWER_MODE_STANDBY_60) ;
    printf("   Power Mode:       0x%X - %s\n", powermode, amg_pwr_mode_strings[powermode]);
 
-   int framerate = i2c_reg_read_byte(ctx->i2c, AMG_REG_FRAMERATE);
+   int framerate = amg8833_inf_frame_rate(ctx);
    printf("   Frame rate:       0x%X - %s\n", framerate, amg_framerate_strings[framerate]);
 
-   float dev_temp = amg8833_device_temperature(ctx);
-   float dev_temp_faren = somax_convert_celsius_to_farenheit(dev_temp);
-   printf("   Temperature C(F)  %3.2f (%3.2f)\n", dev_temp, dev_temp_faren);
+   int avgmode = amg8833_inf_moving_average(ctx);
+   printf("   Moving Average:   0x%X - %s\n", avgmode, amg_movingavg_strings[avgmode]);
 
-   int ints_enabled = (int)amg8833_interrupts_enabled(ctx);
+   float dev_temp = amg8833_inf_device_temperature(ctx);
+   printf("   Temperature:      %3.2f", dev_temp);
+   if (ctx->output_units == AMG8833_OUTPUTUNITS_CELSUIS)
+      printf (" C\n");
+   else if (ctx->output_units == AMG8833_OUTPUTUNITS_FARENHEIT)
+      printf(" F\n");
+
+   int ints_enabled = (int)amg8833_inf_interrupts_enabled(ctx);
    printf("   Interrupts:       0x%x - %s\n", ints_enabled, amg_interruptenable_strings[ints_enabled]);
 
-   int ints_mode = (int)amg8833_interrupt_mode(ctx);
+   int ints_mode = (int)amg8833_inf_interrupt_mode(ctx);
    printf("   Interrupt Mode:   0x%x - %s\n", ints_mode, amg_interruptmode_strings[ints_mode]);
 }
 
-float amg8833_device_temperature(amg8833_context ctx)
+float amg8833_inf_device_temperature(amg8833_context ctx)
 {
    uint8_t data[2];
 
@@ -247,6 +269,9 @@ float amg8833_device_temperature(amg8833_context ctx)
 
    if (sign)
       return -ftemp;
+
+   if (ctx->output_units == AMG8833_OUTPUTUNITS_FARENHEIT)
+      ftemp = somax_convert_celsius_to_farenheit(ftemp);
 
    return ftemp;
 }
@@ -260,7 +285,7 @@ float amg8833_device_temperature(amg8833_context ctx)
 //           class is the property of the caller and should be destroyed accordingly
 //
 //if callback bufffer is NULL, use the driver buffer.
-void amg8833_output_callbk_framedata(amg8833_context ctx, AMG8833_FRAMEDATA_CALLBACK callbk, AMG8833_FRAMEDATA_BUFFER frame_buffer)
+void amg8833_cfg_output_callbk_framedata(amg8833_context ctx, amg8833_callback_id callback_id, amg8833_framedata_callback callbk, amg8833_framedata_buffer frame_buffer)
 {
    ctx->framedata_observer = callbk;
    if (frame_buffer && ctx->frame_buffer && !ctx->using_external_framebuffer)
@@ -279,17 +304,25 @@ void amg8833_output_callbk_framedata(amg8833_context ctx, AMG8833_FRAMEDATA_CALL
       ctx->frame_buffer_raw = (uint8_t *)malloc(AMG8833_ARRAY_SIZE * AMG_BYTES_PER_PIXEL);
 }
 
+void amg8833_cfg_output_units(amg8833_context ctx, unsigned char output_units)
+{
+   if (output_units == AMG8833_OUTPUTUNITS_CELSUIS || output_units == AMG8833_OUTPUTUNITS_FARENHEIT)
+      ctx->output_units = output_units;
+   else
+      somax_log_add(SOMAX_LOG_ERR, "AMG8833 : Output units cfg failed. Unknown unit id: %d.", output_units);
+}
+
 // blocking call that runs an observer update loop.
 // PARAM: amg8833 - AMG8833 context
 // PARAM: num_frames - number of frames to operate over
-// RETURN: 1 if the stopped before num_frames were returned. 0 otherwise.
+// RETURN: 1 if stopped before num_frames were returned. 0 otherwise.
 int amg8833_run(amg8833_context amg8833, int num_frames)
 {
    amg8833->num_frames = num_frames;
 
    while (amg8833->frame_counter < amg8833->num_frames || amg8833->num_frames == AMG8833_NUMFRAMES_ALL)
    {
-      usleep(100 * 1000);
+      usleep(100 * U_MILLISECOND);
       if (!amg8833->framedata_observer)
          return 1;
       amg8833_run_update_framedata_observer(amg8833->context_id);
@@ -306,7 +339,7 @@ void amg8833_stop(amg8833_context amg8833, bool stop_framedata)
    }
 }
 
-bool amg8833_interrupts_enabled(amg8833_context ctx)
+bool amg8833_inf_interrupts_enabled(amg8833_context ctx)
 {
    uint8_t int_control = i2c_reg_read_byte(ctx->i2c, AMG_REG_INTERRUPT_CONTROL);
    if (int_control & AMG_INT_ENABLE_BMASK)
@@ -314,15 +347,42 @@ bool amg8833_interrupts_enabled(amg8833_context ctx)
    return false;
 }
 
-int amg8833_interrupt_mode(amg8833_context ctx)
+int amg8833_inf_interrupt_mode(amg8833_context ctx)
 {
    uint8_t int_control = i2c_reg_read_byte(ctx->i2c, AMG_REG_INTERRUPT_CONTROL);
    return (int_control & AMG_INT_MODE_BMASK) >> AMG_INT_MODE_BSHIFT;
 }
 
-amg8833_id amg8833_context_to_id(amg8833_context ctx)
+int amg8833_inf_frame_rate(amg8833_context ctx)
 {
-   return ctx->device_id;
+   return (i2c_reg_read_byte(ctx->i2c, AMG_REG_FRAMERATE) & AMG_FRAMERATE_BMASK) >> AMG_FRAMERATE_BSHIFT;
+}
+
+void amg8833_cfg_frame_rate(amg8833_context ctx, int frame_rate)
+{
+   if (frame_rate != AMG8833_FRAMESPERSEC || frame_rate != AMG8833_10XOVERSAMPLE_FRAMESPERSEC)
+   {
+      somax_log_add(SOMAX_LOG_ERR, "AMG8833: couldn't cfg frame rate. unknown frame rate id: %d ", frame_rate);
+      return;
+   }
+
+   i2c_reg_write_bits(ctx->i2c, AMG_REG_FRAMERATE, AMG_FRAMERATE_BSHIFT, AMG_FRAMERATE_BCOUNT, (uint8_t)frame_rate);
+}
+
+int amg8833_inf_moving_average(amg8833_context ctx)
+{
+   return (i2c_reg_read_byte(ctx->i2c, AMG_REG_MOVING_AVG) & AMG_MOVING_AVG_BMASK) >> AMG_MOVING_AVG_BSHIFT;
+}
+
+void amg8833_cfg_moving_average(amg8833_context ctx, int state)
+{
+   if (state != AMG8833_MOVING_AVERAGE_ENABLED || state != AMG8833_MOVING_AVERAGE_DISABLED)
+   {
+      somax_log_add(SOMAX_LOG_ERR, "AMG8833: couldn't cfg moving average. unknown state id: %d ", state);
+      return;
+   }
+
+   i2c_reg_write_bits(ctx->i2c, AMG_REG_FRAMERATE, AMG_MOVING_AVG_BSHIFT, AMG_MOVING_AVG_BCOUNT, (uint8_t)state);
 }
 
 //------------------------------------------------------------------------------
@@ -334,26 +394,28 @@ static void amg8833_run_update_framedata_observer(int context_id)
 {
    amg8833_context ctx = &contexts[context_id];
 
-   for (int row = 0; row < AMG8833_ARRAY_HEIGHT; row++)
-   {
-      i2c_reg_read_many(ctx->i2c,
-                        AMG_REG_PIXEL_ROW_0 + (row * AMG8833_ARRAY_WIDTH * AMG_BYTES_PER_PIXEL),
-                        &ctx->frame_buffer_raw[row * AMG8833_ARRAY_WIDTH * AMG_BYTES_PER_PIXEL],
-                        AMG8833_ARRAY_WIDTH * AMG_BYTES_PER_PIXEL);
-   }
+   i2c_reg_read_many(ctx->i2c,
+                     AMG_REG_PIXEL_ROW_0,
+                     ctx->frame_buffer_raw,
+                     AMG8833_ARRAY_WIDTH * AMG8833_ARRAY_HEIGHT * AMG_BYTES_PER_PIXEL);
 
    for (int row = 0; row < AMG8833_ARRAY_HEIGHT; row++)
    {
       for (int col = 0; col < AMG8833_ARRAY_WIDTH; col++)
       {
          int raw_lsb_index = (row * AMG8833_ARRAY_WIDTH * AMG_BYTES_PER_PIXEL) + (col * AMG_BYTES_PER_PIXEL);
-         uint16_t raw = ctx->frame_buffer_raw[raw_lsb_index + 1] << 8 | ctx->frame_buffer_raw[raw_lsb_index];
+         uint16_t raw = (uint16_t)ctx->frame_buffer_raw[raw_lsb_index + 1] << 8 | (uint16_t)ctx->frame_buffer_raw[raw_lsb_index];
          float converted = (float)(raw & AMG_RAWPIXEL_VALUE_BITMASK);
          converted *= raw & AMG_RAWPIXEL_SIGN_BITMASK ? -1.0 : 1.0;
-         ctx->frame_buffer[raw_lsb_index / 2] = converted;
+         converted *= AMG8833_PIXEL_TEMP_RESOLUTION_CELSIUS;
+
+         if (ctx->output_units == AMG8833_OUTPUTUNITS_FARENHEIT)
+            ctx->frame_buffer[raw_lsb_index / 2] = somax_convert_celsius_to_farenheit(converted);
+         else if (ctx->output_units == AMG8833_OUTPUTUNITS_CELSUIS)
+            ctx->frame_buffer[raw_lsb_index / 2] = converted;
       }
    }
 
    if (ctx->framedata_observer)
-      ctx->framedata_observer(ctx, ctx->frame_buffer);
+      ctx->framedata_observer(ctx, ctx->framedata_observer_callbk_id, ctx->frame_buffer);
 }
