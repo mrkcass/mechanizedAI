@@ -1,0 +1,13 @@
+[Unit]
+Description=Initialize & Run Somax User Interface
+After=somax.service
+
+[Service]
+TimeoutStartSec=5
+ExecStart=/root/somax_ui/somax_ui run
+Environment="HOME=/home/root"
+WorkingDirectory=/root/somax_ui
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
