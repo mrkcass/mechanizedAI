@@ -2,9 +2,7 @@
 
 PROJ_NAME=thermal_camera
 
-OBJECT_FILES = thermalcamera_main.o		\
-					thermalcamera.o			\
-					amg8833.o					\
+OBJECT_FILES = thermalcamera_main.o
 
 SRC_DIR = src
 OBJ_DIR = build

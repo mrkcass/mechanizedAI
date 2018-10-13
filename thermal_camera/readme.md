@@ -29,8 +29,10 @@ The driver is initialized by systemctl service at boot.
 A diagnostic application is provided to verify correct operation and has the following
 options.
 * info - Display configuration data and exit.
-* test-console - Initalize the sensor and then print realtime pixel data to the console
+* test-pixeldata - Initalize the sensor and then print realtime pixel data to the console
   until ctrl-c is pressed.
+* test-pixeldata-devtemp - Initalize the sensor and then print realtime pixel data and
+   to the consolethe camera device temperature until ctrl-c is pressed.
 * test-oled - Initalize the sensor and then display realtime pixel data converted to 16-bit
   RGB values to the frame oled display until ctrl-c is pressed.
 * run-normal - Initialize the sensor and start in normal data coleection mode.

@@ -41,11 +41,17 @@
 //------------------------------------------------------------------------------
 static thermcam_context thermcamctl_camt;
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//PRIVATE FUNCTION DECLARATIONS
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 static int thermcamctl_open_camt();
 static void thermcamctl_close_camt();
 static void thermcamctl_display_help();
 static void thermcamctl_info();
-static void thermcamctl_test();
+static void thermcamctl_test_framedata();
+static void thermcamctl_test_framedata_devtemp();
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -75,10 +81,21 @@ int main(int argc, char *argv[])
    {
       thermcamctl_info();
    }
-   else if (!return_code && somax_commandline_has_option(argc, argv, "test"))
+   else if (!return_code && somax_commandline_has_option(argc, argv, "test-pixeldata"))
    {
       thermcamctl_info();
-      thermcamctl_test();
+      thermcamctl_test_framedata();
+   }
+   else if (!return_code && somax_commandline_has_option(argc, argv, "test-pixeldata-devtemp"))
+   {
+      thermcamctl_info();
+      thermcamctl_test_framedata_devtemp();
+   }
+   else
+   {
+      thermcamctl_display_help();
+
+      printf("\n\nError: Unknown or missing argument\n\n");
    }
 
    thermcamctl_close_camt();
@@ -98,12 +115,12 @@ void thermcamctl_display_help()
    printf("  commands:\n");
    printf("    info\n");
    printf("       Read and print thermal camera device information\n");
-   printf("    test-console\n");
-   printf("       Intialize thermal camera and output raw frame data to the console.\n");
+   printf("    test-pixeldata\n");
+   printf("       Intialize thermal camera and output pixel temperature data to the console.\n");
    printf("       until control-c.\n");
-   printf("    run-normal\n");
-   printf("       Initialize thermal camera and \n");
-   printf("       until control-c.\n");
+   printf("    test-pixeldata-devtemp\n");
+   printf("       Intialize thermal camera and output pixel temperature data and the\n");
+   printf("       thernal camera operating temerature until control-c.\n");
 }
 
 //------------------------------------------------------------------------------
@@ -119,8 +136,10 @@ static int thermcamctl_open_camt()
    {
       somax_log_add(SOMAX_LOG_ERR, "THERMALCAMERA: could not be started");
       printf("THERMALCAMERA: could not be started\n");
+      return 1;
    }
 
+   thermcam_cfg_output_units(thermcamctl_camt, THERMCAM_OUTPUTUNITS_FARENHEIT);
    somax_log_add(SOMAX_LOG_INFO, "THERMALCAMERA: started");
 
    return 0;
@@ -134,9 +153,15 @@ static void thermcamctl_close_camt()
 static void thermcamctl_info()
 {
    thermcam_info(thermcamctl_camt);
+   printf("\n");
 }
 
-static void thermcamctl_test()
+static void thermcamctl_test_framedata()
 {
-   thermcam_diagnostics(thermcamctl_camt, THERMCAM_DIAGNOSTICID_CONSOLE_OUTPUT);
+   thermcam_diagnostics(thermcamctl_camt, THERMCAM_DIAGNOSTICID_FRAMEDATA_CONSOLE_OUTPUT);
+}
+
+static void thermcamctl_test_framedata_devtemp()
+{
+   thermcam_diagnostics(thermcamctl_camt, THERMCAM_DIAGNOSTICID_FRAMEDATA_DEVTEMP_CONSOLE_OUTPUT);
 }
