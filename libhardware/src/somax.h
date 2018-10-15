@@ -63,4 +63,7 @@ void somax_log_add(int log_level, const char *fmt, ...);
 float somax_convert_celsius_to_farenheit(float temp_celsius);
 float somax_convert_farenheit_to_celsius(float temp_farenheit);
 
+void* somax_malloc(int size_bytes);
+void somax_free(void * malloced);
+
 #endif

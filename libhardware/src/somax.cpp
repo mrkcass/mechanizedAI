@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 #include "somax.h"
 
@@ -143,4 +144,14 @@ float somax_convert_celsius_to_farenheit(float temp_celsius)
 float somax_convert_farenheit_to_celsius(float temp_farenheit)
 {
    return (temp_farenheit - 32.0) * (5.0 / 9.0) + 32;
+}
+
+void *somax_malloc(int size_bytes)
+{
+   return malloc(size_bytes);
+}
+
+void somax_free(void *malloced)
+{
+   free(malloced);
 }
