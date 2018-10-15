@@ -3,13 +3,15 @@
 SOMAX_DIR="/home/mcass/somaxdev"
 
 SOMAX_USB_IP="192.168.2.15"
-SOMAX_WIFI_IP="192.168.2.15"
+SOMAX_WIFI_IP="192.168.1.108"
 SOMAX_USER="root"
 SOMAX_PASS="somax"
 
 #sshfs remote file system mount to local directory
 SSHFS_REMOTE="/root"
 SSHFS_LOCAL="$SOMAX_DIR/somaxfs"
+
+SOMAX_BACKUP="$SOMAX_DIR/somax_backup"
 
 EXP_CMD="$SOMAX_DIR/somax/tools/somax_cmd.exp"
 
@@ -65,6 +67,24 @@ if [[ $1 == "sshfs" ]]; then
    elif [[ "$2" == "clean" ]]; then
       fusermount -u $SSHFS_LOCAL
       rm -rf $SSHFS_LOCAL/*
+   elif [[ "$2" == "backup" ]]; then
+      arch_name="somaxfs-$(date +%Y-%m-%d-%H_%M)-$HOSTNAME.tar"
+      find $SSHFS_LOCAL -name "*.c"                   \
+            -o -name "*.cpp"                          \
+            -o -name "*.h"                            \
+            -o -name "*.sh"                           \
+            -o -name "*.exp"                          \
+            -o -name "*.md"                           \
+            -o -name "*.service"                      \
+            -o -name "Makefile*"                      \
+            -o -name "*.calibration"                  \
+            | tar --no-recursion -cf $SOMAX_BACKUP/$arch_name -T -
+
+      gzip $SOMAX_BACKUP/$arch_name
+      arch_name+=".gz"
+      echo " "
+      echo "   Created Archive: $arch_name"
+      echo " "
    fi
 else
    $EXP_CMD $wifi $1 $2 $3 $4 $5 $6

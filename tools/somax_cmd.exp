@@ -249,6 +249,9 @@ if { "$arg1" == "sshfs" } {
       timeout {
          send_user "timed out!\n"
       }
+      "fuse: bad mount point*" {
+         exit 1
+      }
    }
    expect "# "
    puts "mounted somaxfs"
