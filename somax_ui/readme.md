@@ -37,6 +37,9 @@ Available applications:
   of frame to target, height of target, direction of target travel, speed of target
   and acceleration of target.
 
+Available UI resources:
+* **ui_menu** - a menu that displays text menu items in vertical list format.
+
 #
 **Operation**
 
@@ -50,66 +53,7 @@ at boot.
   only joy3d-control-gimbal and joy3d-thermal-view are enabled. joy3d-gimbal-control
   is ready for use. joy3d-thermal-view is in development and should be ready by
   10/15/2018.
-
-#
-**Hardware**
-
-| Specs      | Maker       |
-| ---------- | -------     |
-| Model      | JH-D400X-R4 |
-| Voltage    | 3.3v (5.0v) |
-| Power      | n/a         |
-| Dimensions |	49x49x95   |
-| Axis       | 3           |
-| Button     | 1           |
-| Resistance | 10k         |
-&nbsp;
-
-**Strapping**
-
-None
-
-&nbsp;
+* October 14, 2018 - created framework for input mixer and supporting classes. created video
+  composer and supporting classes framework. created the first ui class ui_menu.
 
 
-**Pin Map**
-
-|JH-D400 Pin	| Edison Mini-Breakout Pin  |
-|------------- | ------------------------- |
-| VIN          | 5.0 POWER                 |
-| GND          | GND                       |
-| JOYPAN       | I2C1-1, ADC50-A0          |
-| JOYROTATE    | I2C1-1, ADC50-A1          |
-| JOYTILT      | I2C1-1, ADC50-A2          |
-| JOYB         | I2C1-1, ADC50-A3          |
-&nbsp;
-
-**Joy-Stick map**
-
-Looking down on the stick with max power to the right and min power to the left
-
-	JOYPANSTICK	STICK_LEFT		STICK_CENTER	STICK_RIGHT
-
-	JOYTILT		STICK_UP		STICK_CENTER	STICK_DOWN
-
-	JOYROTATE	STICK_COUNTERCLK	STICK_CENTER	STICK_CLOCK
-&nbsp;
-
-**Stick-ADC Map**
-
-	JOYPAN		STICK_LEFT  < STICK_CENTER  < STICK_RIGHT
-
-	JOYTILT		STICK_DOWN  < STICK_CENTER  < STICK_UP
-
-	JOYROTATE	STICK_CLOCK < STICK_CENTER  < STICK_COUNTERCLK
-
-	JOYB	PRESSED = HIGH
-
-&nbsp;
-
-|Driver Option	| Description  |
-|------------- | ------------------------- |
-| run          | start the joystick for normal operation   |
-| calibrate    | start calibration function |
-| sample-raw   | test the values returned by the adc  |
-| sample-pwr   | test converted adc samples as power levels  |

@@ -2,7 +2,14 @@
 
 PROJ_NAME=somax_ui
 
-OBJECT_FILES = somaxui_main.o
+OBJECT_FILES = somaxui_main.o				\
+					videocomposer.o			\
+					videodisplay.o				\
+					pixelbuffer.o				\
+					inputmixer.o				\
+					inputsource.o				\
+					inputevent.o				\
+
 
 SRC_DIR = src
 OBJ_DIR = build
