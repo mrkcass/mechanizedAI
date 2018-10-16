@@ -32,6 +32,8 @@
 
 #define MAX_STR_DEVICEID_LEN 32
 
+typedef unsigned char smx_byte;
+
 void somax_data_init(const char name[], const char sclass[], const char version[], const char resources[]);
 
 void somax_print_config(int print_options);
@@ -45,6 +47,7 @@ typedef int somax_mainboard_id_t;
 #define SOMAX_MAINBOARDID_EDISON       1
 #define SOMAX_MAINBOARDID_HIKEY960     2
 #define SOMAX_MAINBOARDID_STR_MAX_LENGTH 16
+#define SOMAX_MAINBOARDID SOMAX_MAINBOARDID_EDISON
 somax_mainboard_id_t somax_mainboard_id();
 char* somax_mainboard_id_to_string(somax_mainboard_id_t id);
 
