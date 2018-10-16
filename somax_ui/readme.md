@@ -48,12 +48,17 @@ at boot.
 #
 **Status**
 
+* October 15, 2018 - started to add the video display for the ssd1351. realized this
+  is a good opportunity to abstract the SPI and GPIO interfaces. the framework for
+  GPIO is done as is the implementation. The SPI interface has a framework and the
+  implementation is about half way done.
+* October 14, 2018 - created framework for input mixer and supporting classes. created video
+  composer and supporting classes framework. created the first ui class ui_menu.
 * October 12, 2018 - created project and copied in old 3d joystick functionality.
   Created and installed systemd service to start application at boot. currently,
   only joy3d-control-gimbal and joy3d-thermal-view are enabled. joy3d-gimbal-control
   is ready for use. joy3d-thermal-view is in development and should be ready by
   10/15/2018.
-* October 14, 2018 - created framework for input mixer and supporting classes. created video
-  composer and supporting classes framework. created the first ui class ui_menu.
+
 
 

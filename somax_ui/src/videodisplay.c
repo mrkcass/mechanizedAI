@@ -13,6 +13,7 @@
 //------------------------------------------------------------------------------
 #include "somax.h"
 #include "videodisplay.h"
+#include "videodisplay_ssd1351.h"
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //CONSTANTS
@@ -24,6 +25,12 @@
 //DATA STRUCTURES
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+struct SSD1351_DRIVER
+{
+   ssd1351_context ssd351;
+
+};
+
 struct VIDDISP_CONTEXT
 {
    int context_slot;
@@ -57,8 +64,8 @@ static struct VIDDISP_PROPS display_properties[VIDDISP_NUM_DISPLAYS+1] =
    {
       "FRAME-PRIMARY",
       VIDDISP_DEVICEID_OLED1500RGB565,
-      128,
-      128,
+      SSD1351_WIDTH,
+      SSD1351_HEIGHT,
       PIXBUF_FORMATID_RGB565,
    },
    {

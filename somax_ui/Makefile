@@ -9,6 +9,9 @@ OBJECT_FILES = somaxui_main.o				\
 					inputmixer.o				\
 					inputsource.o				\
 					inputevent.o				\
+					gpio_interface.o			\
+					spi_interface.o			\
+					color_oled.o				\
 
 
 SRC_DIR = src
