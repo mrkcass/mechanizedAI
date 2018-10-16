@@ -48,9 +48,9 @@ static char frequency_str[][32] = {
 
 static int i2c_bus_map[SOMAX_NUM_MAINBOARDS+1][NUM_I2C_BUSES] =
 {
-   {0, 0},
-   {1, 6},
-   {0, 0}
+   {0, 0}, //unknown
+   {1, 6}, //edison
+   {0, 0}  //hikey960
 };
 static int i2c_bus_context_count[NUM_I2C_BUSES] = {0, 0};
 static mraa_i2c_context i2c_bus[NUM_I2C_BUSES];
