@@ -26,8 +26,8 @@
 #define SPI_MODE_3   3
 
 #define SPI_FREQUENCY_MIN_KHZ       400
-#define SPI_FREQUENCY_MAX_KHZ       125000
-#define SPI_FREQUENCY_DEFAULT_KHZ   25000
+#define SPI_FREQUENCY_MAX_KHZ       125000   //125 MHZ
+#define SPI_FREQUENCY_DEFAULT_KHZ   25000    //25 MHZ
 
 #define SPI_MAX_CONTEXTS 32
 struct SPI_CONTEXT;
@@ -35,19 +35,22 @@ typedef SPI_CONTEXT* spi_context;
 
 typedef int spi_busid;
 
-spi_context spi_open(spi_busid bus_id, int chip_select);
-void spi_close (spi_context spi);
+spi_context spi_ini_open(spi_busid bus_id, int chip_select);
+void spi_ini_close(spi_context spi);
 
-int spi_set_frequency(spi_context i2c, int i2c_frequency_id);
+int spi_cfg_frequency(spi_context spi, int freq_khz);
+void spi_cfg_mode(spi_context spi, int spi_mode);
+void spi_cfg_reset(spi_context spi, smx_ui32 reset_toggle_delay);
 
-int spi_cmd_write_byte(spi_context spi, uint8_t byte);
-int spi_cmd_write_word(spi_context spi, uint16_t word);
-int spi_cmd_write_bytes(spi_context spi, uint8_t *bytes, int num_bytes);
-int spi_cmd_write_words(spi_context spi, uint16_t *words, int num_words);
+void spi_cmd_write_byte(spi_context spi, uint8_t byte);
+void spi_cmd_write_word(spi_context spi, uint16_t word);
+void spi_cmd_write_bytes(spi_context spi, uint8_t *bytes, int num_bytes);
+void spi_cmd_write_words(spi_context spi, uint16_t *words, int num_words);
+void spi_dat_write_byte(spi_context spi, uint8_t byte);
+void spi_dat_write_word(spi_context spi, uint16_t word);
+void spi_dat_write_bytes(spi_context spi, uint8_t *bytes, int num_bytes);
+void spi_dat_write_words(spi_context spi, uint16_t *words, int num_words);
 
-int spi_somax_bus_id_to_mainboard_id(int somax_i2c_busid);
 
-
-void debug(int argc, char ** argv);
 
 #endif
