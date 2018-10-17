@@ -25,15 +25,16 @@
 // #define SOMAX_RESOURCES "NONE"
 // #endif
 
-//microseconds per millisecond
-#define U_MILLISECOND 1000
+
+//----------
+//standard types
+typedef unsigned char   smx_byte;
+typedef unsigned int    smx_i32;
+typedef unsigned int    smx_ui32;
 
 #define SOMAX_PRINTOPTION_CONFIG 0x01
 
 #define MAX_STR_DEVICEID_LEN 32
-
-typedef unsigned char smx_byte;
-
 void somax_data_init(const char name[], const char sclass[], const char version[], const char resources[]);
 
 void somax_print_config(int print_options);
@@ -68,5 +69,10 @@ float somax_convert_farenheit_to_celsius(float temp_farenheit);
 
 void* somax_malloc(int size_bytes);
 void somax_free(void * malloced);
+
+//microseconds per millisecond
+#define U_MILLISECOND 1000
+#define U_SECOND 1000000
+void somax_sleep(smx_ui32 micro_secs);
 
 #endif

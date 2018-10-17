@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "somax.h"
 
@@ -154,4 +155,9 @@ void *somax_malloc(int size_bytes)
 void somax_free(void *malloced)
 {
    free(malloced);
+}
+
+void somax_sleep(smx_ui32 micro_secs)
+{
+   usleep(micro_secs);
 }
