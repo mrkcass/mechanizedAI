@@ -13,8 +13,8 @@
 //------------------------------------------------------------------------------
 #include "somax.h"
 
-#define SSD1351_NUM_DISPLAYID      1
-#define SSD1351_DISPLAYID_OLED15   1
+#define SSD1351_DEVICEID_OLED_0   1
+#define SSD1351_NUM_DEVICEID      1
 
 #define SSD1351_CONTEXT_NULL 0
 
@@ -24,13 +24,9 @@
 #define SSD1351_FRAMEBUFFER_SIZE_BYTES 32768
 
 typedef int ssd1351_displayid;
-struct SSD1351_CONTEXT;
-typedef struct SSD1351_CONTEXT* ssd1351_context;
 
-typedef smx_byte ssd1351_frame_buffer[SSD1351_FRAMEBUFFER_SIZE_BYTES];
-
-ssd1351_context ssd1351_open(ssd1351_displayid id);
-void  ssd1351_close(ssd1351_context camt);
-void ssd1351_display_buffer(ssd1351_context display, ssd1351_frame_buffer buffer);
+bool ssd1351_ini_open(viddisp_deviceid id);
+void ssd1351_ini_close(viddisp_deviceid id);
+void ssd1351_opr_display_buffer(viddisp_deviceid id, viddisp_frame_buffer buffer);
 
 #endif

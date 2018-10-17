@@ -10,6 +10,7 @@
 #include <fcntl.h>
 
 #include "somax.h"
+#include "libhardware.h"
 #include "adc50.h"
 #include "joystick3d_stick.h"
 #include "mcu_motor_controller.h"
@@ -66,7 +67,7 @@ int main(int argc, char *argv[])
 
    int return_code = 0;
 
-   mraa_init();
+   libhardware_init();
 
    return_code = joy3d_open_adc();
 
@@ -106,7 +107,7 @@ int main(int argc, char *argv[])
    if (!return_code)
       return_code = -1;
    joy3d_close();
-   mraa_deinit();
+   libhardware_deinit();
    if (return_code > 1)
       return 0;
    else

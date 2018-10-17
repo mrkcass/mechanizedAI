@@ -48,6 +48,10 @@ at boot.
 #
 **Status**
 
+* October 16, 2018 - finished SPI interface. Added a few extras to GPIO interface.
+  completed work on videodisplay. started videodisplay_ssd1351 and about half way done
+  with the implementation. ssd1351 and the video pipeline will be ready for testing
+  by lunch time tomorrow.
 * October 15, 2018 - started to add the video display for the ssd1351. realized this
   is a good opportunity to abstract the SPI and GPIO interfaces. the framework for
   GPIO is done as is the implementation. The SPI interface has a framework and the

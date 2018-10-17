@@ -31,7 +31,8 @@ struct PIXBUF_CONTEXT
    pixbuf_formatid format_id;
    int width, height;
    int alpha;
-   unsigned char * pixels;
+   smx_byte * pixels;
+   int context_slot;
 };
 
 struct PIXBUF_PROPS
@@ -87,7 +88,7 @@ pixbuf_context pixbuf_ini_open(pixbuf_formatid format_id, int width, int height)
    ctx->format_id = format_id;
    ctx->width = width;
    ctx->height = height;
-   ctx->pixels = (unsigned char*)somax_malloc(pixbuf_properites[format_id].bytes_per_pixel * width * height);
+   ctx->pixels = (smx_byte*)somax_malloc(pixbuf_properites[format_id].bytes_per_pixel * width * height);
 
    context_list[contextlist_used] = ctx;
    contextlist_used++;
@@ -97,12 +98,20 @@ pixbuf_context pixbuf_ini_open(pixbuf_formatid format_id, int width, int height)
 
 void pixbuf_ini_close(pixbuf_context pixbuf)
 {
+   context_list[pixbuf->context_slot] = 0;
+   contextlist_used--;
+   somax_free(pixbuf->pixels);
+   somax_free(pixbuf);
+}
+
+void pixbuf_opr_blit(pixbuf_context dest, int dest_x, int dest_y, pixbuf_context src, int src_x, int src_y, int src_w, int src_h)
+{
 
 }
 
-void pixbuf_opr_blit(pixbuf_context dest, pixbuf_context src)
+smx_byte* pixbuf_inf_pixels(pixbuf_context pixbuf)
 {
-
+   return pixbuf->pixels;
 }
 
 //------------------------------------------------------------------------------

@@ -16,7 +16,8 @@
 
 #define PIXBUF_FORMATID_RGB565   1
 #define PIXBUF_FORMATID_MONO     2
-#define PIXBUF_NUM_FORMATS       2
+#define PIXBUF_FORMATID_RGB888   3
+#define PIXBUF_NUM_FORMATS       3
 
 #define PIXBUF_MAX_CONTEXTS      128
 
@@ -29,6 +30,7 @@ typedef int pixbuf_formatid;
 pixbuf_context pixbuf_ini_open(pixbuf_formatid format_id, int width, int height);
 void pixbuf_ini_close(pixbuf_context ctx);
 
-void pixbuf_opr_blit(pixbuf_context dest, pixbuf_context src);
+void pixbuf_opr_blit(pixbuf_context dest, int dest_x, int dest_y, pixbuf_context src, int src_x, int src_y, int src_w, int src_h);
+smx_byte* pixbuf_inf_pixels(pixbuf_context pixbuf);
 
 #endif
