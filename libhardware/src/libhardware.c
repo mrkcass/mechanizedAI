@@ -19,11 +19,15 @@
 //------------------------------------------------------------------------------
 bool libhardware_init()
 {
+   #if SOMAX_MAINBOARDID == SOMAX_MAINBOARDID_EDISON
    mraa_init();
+   #endif
    return true;
 }
 
 void libhardware_deinit()
 {
+   #if SOMAX_MAINBOARDID == SOMAX_MAINBOARDID_EDISON
    mraa_deinit();
+   #endif
 }
