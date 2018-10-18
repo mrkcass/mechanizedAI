@@ -47,6 +47,10 @@ options.
    I beleive this do to a bad connection. Will track it down tomorrow. also seeing higher
    than expected temperature values, probably a conversion math issue that i have on the
    todo list.
+* **October 17, 2018** - Thermal camera is operational and displaying output to
+  the frame 1.5" color oled. the color is not right and i need to add interpolation
+  so that the pixels are not so block-y. the frame rate is set at 10 fps on the
+  oled and 5 fps on the thermal camera which is giving good results at the moment.
 #
 
 

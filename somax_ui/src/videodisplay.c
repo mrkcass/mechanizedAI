@@ -11,6 +11,7 @@
 //              provided by video diplays.
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+#include <stdio.h>
 #include "somax.h"
 #include "videodisplay.h"
 #include "videodisplay_ssd1351.h"
@@ -74,12 +75,15 @@ static struct DEVICE_PROPS device_props[VIDDISP_NUM_DISPLAYID+1] =
       0,
       0,
       0,
+      0,
+      0,
    },
    {
       "FRAME-PRIMARY",
       SSD1351_DEVICEID_OLED_0,
       SSD1351_WIDTH,
       SSD1351_HEIGHT,
+      0,
       PIXBUF_FORMATID_RGB565,
       0,
    },
@@ -88,11 +92,13 @@ static struct DEVICE_PROPS device_props[VIDDISP_NUM_DISPLAYID+1] =
       0,
       128,
       64,
+      0,
       PIXBUF_FORMATID_MONO,
       0,
    },
    {
       "ANDROID-REMOTE",
+      0,
       0,
       0,
       0,
@@ -120,18 +126,22 @@ static struct DEVICE_FUNCS device_ops[VIDDISP_NUM_DISPLAYID+1] =
 //------------------------------------------------------------------------------
 viddisp_context viddisp_ini_open(viddisp_displayid display_id)
 {
+   printf("debug1\n");
    if (!viddisp_can_open(display_id))
    {
       somax_log_add(SOMAX_LOG_ERR, "VIDEODISPLAY. open. unknown display id: %d", display_id);
       return 0;
    }
-
+   printf("debug2\n");
    DEVICE_PROPS * vprops = &device_props[display_id];
    DEVICE_FUNCS * vops = &device_ops[display_id];
    if (!vprops->frame_buffer)
    {
+      printf("debug3\n");
       vops->ini_open(vprops->device_id);
+      printf("debug4 -> %d (%d)\n", display_id, vprops->pixel_format);
       vprops->frame_buffer = pixbuf_ini_open(vprops->pixel_format, vprops->width, vprops->height);
+      printf("debug5\n");
    }
 
    viddisp_context new_ctx = &context_list[contextlist_used];

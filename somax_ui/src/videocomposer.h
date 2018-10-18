@@ -22,20 +22,23 @@
 #define VIDCOMP_DISPLAYID_REMOTE_ANDROID   3
 
 #define VIDCOMP_MAX_CONTEXTS 4
+#define VIDCOMP_MAX_OBSERVERS 8
 
 struct VIDCOMP_CONTEXT;
 typedef struct VIDCOMP_CONTEXT *vidcomp_context;
 typedef int vidcomp_displayid;
 
 typedef void (*vidcomp_update_observer)(vidcomp_context ctx);
-typedef void (*vidcomp_render_observer)(vidcomp_context ctx);
+typedef void (*vidcomp_render_observer)(vidcomp_context ctx, pixbuf_context frame_buffer);
 
 vidcomp_context vidcomp_ini_open(vidcomp_displayid displayid);
 void vidcomp_ini_close(vidcomp_context ctx);
 
-void vidcomp_add_update_observer(vidcomp_context ctx, vidcomp_update_observer observer);
-void vidcomp_add_render_observer(vidcomp_context ctx, vidcomp_render_observer observer);
+bool vidcomp_add_update_observer(vidcomp_context ctx, vidcomp_update_observer observer);
+bool vidcomp_add_render_observer(vidcomp_context ctx, vidcomp_render_observer observer);
 
 viddisp_context vidcomp_inf_videodisplay(vidcomp_context ctx);
+
+bool vidcomp_opr_run(vidcomp_context ctx, int frame_rate);
 
 #endif

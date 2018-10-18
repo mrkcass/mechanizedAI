@@ -11,7 +11,7 @@
 //              depths.
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-
+#include <string.h>
 #include "somax.h"
 #include "pixelbuffer.h"
 
@@ -89,6 +89,7 @@ pixbuf_context pixbuf_ini_open(pixbuf_formatid format_id, int width, int height)
    ctx->width = width;
    ctx->height = height;
    ctx->pixels = (smx_byte*)somax_malloc(pixbuf_properites[format_id].bytes_per_pixel * width * height);
+   memset(ctx->pixels, 0x8, pixbuf_properites[format_id].bytes_per_pixel * width * height);
 
    context_list[contextlist_used] = ctx;
    contextlist_used++;

@@ -46,35 +46,14 @@ static void edison_cfg_state(gpio_context gpio, gpio_state state);
 //DATA STRUCTURES
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-#define GPIO_CONTEXT_FIELDS            \
-   gpio_pinid pin_id;                  \
-   gpio_controllerid controller_id;    \
-   gpio_direction direction;           \
-   int context_slot;
 
 struct GPIO_CONTEXT
 {
-   GPIO_CONTEXT_FIELDS
+   gpio_pinid pin_id;
+   gpio_controllerid controller_id;
+   gpio_direction direction;
+   int context_slot;
 };
-#if SOMAX_MAINBOARDID == SOMAX_MAINBOARDID_EDISON
-struct EDISON_GPIO_CONTEXT
-{
-   GPIO_CONTEXT_FIELDS
-   mraa_gpio_context pin;
-};
-typedef EDISON_GPIO_CONTEXT* edison_gpio_context;
-#elif SOMAX_MAINBOARDID == SOMAX_MAINBOARDID_HIKEY960
-struct HIKEY960_GPIO_CONTEXT
-{
-   GPIO_CONTEXT_FIELDS
-   mraa_gpio_context pin;
-};
-
-struct TEENSY_GPIO_CONTEXT
-{
-   GPIO_CONTEXT_FIELDS
-};
-#endif
 
 typedef gpio_context (*controller_init_pin)(gpio_pinid pin_id, gpio_direction direction);
 typedef void (*controller_deinit_pin)(gpio_context gpio);
@@ -136,7 +115,10 @@ gpio_context gpio_ini_open(gpio_controllerid controller_id, gpio_pinid pin_id, g
       if (!gpio_init_controller(controller_id))
          return 0;
 
-   return gpio_controller_ops[controller_id].ini_init(pin_id, direction);
+   gpio_context new_ctx = gpio_controller_ops[controller_id].ini_init(pin_id, direction);
+   if (new_ctx)
+      new_ctx->controller_id = controller_id;
+   return new_ctx;
 }
 
 void gpio_ini_close(gpio_context gpio)
@@ -185,37 +167,46 @@ static bool gpio_init_controller(gpio_controllerid controller_id)
 #define GPIO_EDISON_NUM_PINS 16
 static int edison_gpio_map[GPIO_EDISON_NUM_PINS] =
 {
-   128, //spi 0 (edison spi 1) RESET
-   130, //spi 0 (edison spi 1) DC (data/command)
+   130, //spi 0 (edison spi 1) RESET
+   128, //spi 0 (edison spi 1) DC (data/command)
 };
+
+struct EDISON_GPIO_CONTEXT
+{
+   mraa_gpio_context pin;
+};
+typedef struct EDISON_GPIO_CONTEXT* edison_context;
+static struct EDISON_GPIO_CONTEXT edison_contexts[GPIO_MAX_CONTEXTS];
 
 static gpio_context edison_init_pin(gpio_pinid pin_id, gpio_direction direction)
 {
    int ed_pin = edison_gpio_map[pin_id];
    GPIO_CONTROLLER * controller = &gpio_controller[GPIO_CONTROLLERID_MAINBOARD];
 
-   edison_gpio_context ctx = (edison_gpio_context)&controller->contexts[controller->context_count];
+   gpio_context ctx = &controller->contexts[controller->context_count];
+   edison_context ed_ctx = &edison_contexts[controller->context_count];
 
    ctx->context_slot = controller->context_count;
-   ctx->pin = mraa_gpio_init_raw(ed_pin);
-   mraa_gpio_use_mmaped(ctx->pin, 1);
-   edison_cfg_direction((gpio_context)ctx, direction);
+   ed_ctx->pin = mraa_gpio_init_raw(ed_pin);
+   mraa_gpio_use_mmaped(ed_ctx->pin, 1);
+   edison_cfg_direction(ctx, direction);
 
    controller->context_count++;
-   return (gpio_context)ctx;
+   return ctx;
 }
 
 static void edison_deinit_pin(gpio_context gpio)
 {
-   mraa_gpio_context ed_gpio = ((edison_gpio_context)gpio)->pin;
+   mraa_gpio_context ed_gpio = edison_contexts[gpio->context_slot].pin;
    GPIO_CONTROLLER *controller = &gpio_controller[GPIO_CONTROLLERID_MAINBOARD];
    mraa_gpio_close(ed_gpio);
+   edison_contexts[gpio->context_slot].pin = 0;
    controller->contexts[gpio->context_slot].controller_id = 0;
 }
 
 static void edison_cfg_direction(gpio_context gpio, gpio_direction direction)
 {
-   mraa_gpio_context ed_gpio = ((edison_gpio_context)gpio)->pin;
+   mraa_gpio_context ed_gpio = edison_contexts[gpio->context_slot].pin;
    mraa_result_t result;
    if (direction == GPIO_DIRECTION_OUT)
       result = mraa_gpio_dir(ed_gpio, MRAA_GPIO_OUT);
@@ -234,13 +225,13 @@ static void edison_cfg_pull(gpio_context gpio, gpio_pulltype strength)
 
 static gpio_state edison_inf_state(gpio_context gpio)
 {
-   mraa_gpio_context ed_gpio = ((edison_gpio_context)gpio)->pin;
+   mraa_gpio_context ed_gpio = edison_contexts[gpio->context_slot].pin;
    return mraa_gpio_read(ed_gpio);
 }
 
 static void edison_cfg_state(gpio_context gpio, gpio_state state)
 {
-   mraa_gpio_context ed_gpio = ((edison_gpio_context)gpio)->pin;
+   mraa_gpio_context ed_gpio = edison_contexts[gpio->context_slot].pin;
    mraa_gpio_write(ed_gpio, state);
 }
 #endif

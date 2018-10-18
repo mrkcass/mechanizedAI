@@ -60,31 +60,6 @@ struct SPI_CONTEXT
     int context_slot;
 };
 
-#define SPI_BUS_FIELDS                                \
-   struct SPI_CONTEXT contexts[SPI_MAX_CONTEXTS];     \
-   int context_count;
-
-struct SPI_BUS
-{
-   SPI_BUS_FIELDS
-};
-
-#if SOMAX_MAINBOARDID == SOMAX_MAINBOARDID_HIKEY960
-struct HIKEY960_SPI_BUS
-{
-   SPI_BUS_FIELDS
-
-   mraa_spi_context spi;
-   gpio_context dc; //data / command
-   gpio_context reset;
-};
-
-struct TEENSY_SPI_BUS
-{
-   SPI_BUS_FIELDS
-};
-#endif
-
 typedef spi_context (*bus_init)(spi_busid bus_id, int chip_select);
 typedef void (*bus_deinit)(spi_context ctx);
 typedef int  (*bus_set_frequency)(spi_context ctx, int freq_khz);
@@ -237,24 +212,24 @@ void spi_dat_write_words(spi_context spi, uint16_t *words, int num_words)
 #define GPIO_STATE_DAT     GPIO_STATE_HI
 struct EDISON_SPI_BUS
 {
-   SPI_BUS_FIELDS
-
+   struct SPI_CONTEXT contexts[SPI_MAX_CONTEXTS];
+   int context_count;
    mraa_spi_context spi;
    gpio_context dc; //data / command
    gpio_context reset;
 };
 typedef struct EDISON_SPI_BUS *edison_spi_bus;
-static EDISON_SPI_BUS spi_bus[SPI_EDISON_NUM_BUS+1];
+static struct EDISON_SPI_BUS edison_bus[SPI_EDISON_NUM_BUS+1];
 static int edison_spi_map[SPI_EDISON_NUM_BUS+1] =
 {
    0,
    1, //edison spi 1
 };
 
-spi_context edison_bus_init(spi_busid bus_id, int chip_select)
+spi_context edison_ini_init(spi_busid bus_id, int chip_select)
 {
    mraa_result_t result;
-   edison_spi_bus bus = &spi_bus[bus_id];
+   edison_spi_bus bus = &edison_bus[bus_id];
 
    if (!bus->spi)
    {
@@ -300,9 +275,9 @@ spi_context edison_bus_init(spi_busid bus_id, int chip_select)
    return new_ctx;
 }
 
-void edison_bus_deinit(spi_context ctx)
+void edison_ini_deinit(spi_context ctx)
 {
-   //todo: implement edison_bus_deinit
+   //todo: implement edison_deinit
 }
 
 int edison_cfg_frequency(spi_context ctx, int freq_khz)
@@ -312,7 +287,7 @@ int edison_cfg_frequency(spi_context ctx, int freq_khz)
       somax_log_add(SOMAX_LOG_ERR, "SPI: set frequency. requested out of range %d khz", freq_khz);
    }
 
-   mraa_result_t result = mraa_spi_frequency(spi_bus[ctx->bus_id].spi, freq_khz * 1000);
+   mraa_result_t result = mraa_spi_frequency(edison_bus[ctx->bus_id].spi, freq_khz * 1000);
    if (result != MRAA_SUCCESS)
    {
       somax_log_add(SOMAX_LOG_WARN, "SPI. set_frequency failed at %d khz", freq_khz);
@@ -324,7 +299,7 @@ int edison_cfg_frequency(spi_context ctx, int freq_khz)
 
 void edison_cfg_mode(spi_context ctx, int mode)
 {
-   edison_spi_bus bus = &spi_bus[ctx->bus_id];
+   edison_spi_bus bus = &edison_bus[ctx->bus_id];
 
    mraa_result_t result = mraa_spi_mode(bus->spi, MRAA_SPI_MODE0);
    if (result == MRAA_SUCCESS)
@@ -335,18 +310,21 @@ void edison_cfg_mode(spi_context ctx, int mode)
 
 void edison_cfg_reset(spi_context ctx, smx_ui32 reset_toggle_delay)
 {
-   edison_spi_bus bus = &spi_bus[ctx->bus_id];
+   edison_spi_bus bus = &edison_bus[ctx->bus_id];
+   printf("debug3.2.1 %p\n", bus->reset);
    gpio_cfg_state(bus->reset, GPIO_STATE_HI);
    somax_sleep(reset_toggle_delay);
+   printf("debug3.2.2\n");
    gpio_cfg_state(bus->reset, GPIO_STATE_LO);
    somax_sleep(reset_toggle_delay);
+   printf("debug3.2.3\n");
    gpio_cfg_state(bus->reset, GPIO_STATE_HI);
    somax_sleep(reset_toggle_delay);
 }
 
-void edison_bus_write_cmd_byte(spi_context ctx, uint8_t byte)
+void edison_write_cmd_byte(spi_context ctx, uint8_t byte)
 {
-   edison_spi_bus bus = &spi_bus[ctx->bus_id];
+   edison_spi_bus bus = &edison_bus[ctx->bus_id];
    gpio_cfg_state(bus->dc, GPIO_STATE_CMD);
    int status = mraa_spi_write(bus->spi, byte);
    if (status < 0)
@@ -354,9 +332,9 @@ void edison_bus_write_cmd_byte(spi_context ctx, uint8_t byte)
    gpio_cfg_state(bus->dc, GPIO_STATE_DAT);
 }
 
-void edison_bus_write_cmd_word(spi_context ctx, uint16_t word)
+void edison_write_cmd_word(spi_context ctx, uint16_t word)
 {
-   edison_spi_bus bus = &spi_bus[ctx->bus_id];
+   edison_spi_bus bus = &edison_bus[ctx->bus_id];
    gpio_cfg_state(bus->dc, GPIO_STATE_CMD);
    int status = mraa_spi_write_word(bus->spi, word);
    if (status < 0)
@@ -364,9 +342,9 @@ void edison_bus_write_cmd_word(spi_context ctx, uint16_t word)
    gpio_cfg_state(bus->dc, GPIO_STATE_DAT);
 }
 
-void edison_bus_write_cmd_bytes(spi_context ctx, uint8_t *bytes, int num_bytes)
+void edison_write_cmd_bytes(spi_context ctx, uint8_t *bytes, int num_bytes)
 {
-   edison_spi_bus bus = &spi_bus[ctx->bus_id];
+   edison_spi_bus bus = &edison_bus[ctx->bus_id];
    gpio_cfg_state(bus->dc, GPIO_STATE_CMD);
    mraa_result_t status = mraa_spi_transfer_buf(bus->spi, bytes, 0, num_bytes);
    if (status != MRAA_SUCCESS)
@@ -374,9 +352,9 @@ void edison_bus_write_cmd_bytes(spi_context ctx, uint8_t *bytes, int num_bytes)
    gpio_cfg_state(bus->dc, GPIO_STATE_DAT);
 }
 
-void edison_bus_write_cmd_words(spi_context ctx, uint16_t *words, int num_words)
+void edison_write_cmd_words(spi_context ctx, uint16_t *words, int num_words)
 {
-   edison_spi_bus bus = &spi_bus[ctx->bus_id];
+   edison_spi_bus bus = &edison_bus[ctx->bus_id];
    gpio_cfg_state(bus->dc, GPIO_STATE_CMD);
    mraa_result_t status = mraa_spi_transfer_buf_word(bus->spi, words, 0, num_words);
    if (status != MRAA_SUCCESS)
@@ -384,9 +362,9 @@ void edison_bus_write_cmd_words(spi_context ctx, uint16_t *words, int num_words)
    gpio_cfg_state(bus->dc, GPIO_STATE_DAT);
 }
 
-void edison_bus_write_dat_byte(spi_context ctx, uint8_t byte)
+void edison_write_dat_byte(spi_context ctx, uint8_t byte)
 {
-   edison_spi_bus bus = &spi_bus[ctx->bus_id];
+   edison_spi_bus bus = &edison_bus[ctx->bus_id];
    gpio_cfg_state(bus->dc, GPIO_STATE_DAT);
    int status = mraa_spi_write(bus->spi, byte);
    if (status < 0)
@@ -394,9 +372,9 @@ void edison_bus_write_dat_byte(spi_context ctx, uint8_t byte)
    gpio_cfg_state(bus->dc, GPIO_STATE_CMD);
 }
 
-void edison_bus_write_dat_word(spi_context ctx, uint16_t word)
+void edison_write_dat_word(spi_context ctx, uint16_t word)
 {
-   edison_spi_bus bus = &spi_bus[ctx->bus_id];
+   edison_spi_bus bus = &edison_bus[ctx->bus_id];
    gpio_cfg_state(bus->dc, GPIO_STATE_DAT);
    int status = mraa_spi_write_word(bus->spi, word);
    if (status < 0)
@@ -404,19 +382,19 @@ void edison_bus_write_dat_word(spi_context ctx, uint16_t word)
    gpio_cfg_state(bus->dc, GPIO_STATE_CMD);
 }
 
-void edison_bus_write_dat_bytes(spi_context ctx, uint8_t *bytes, int num_bytes)
+void edison_write_dat_bytes(spi_context ctx, uint8_t *bytes, int num_bytes)
 {
-   edison_spi_bus bus = &spi_bus[ctx->bus_id];
-   gpio_cfg_state(bus->dc, GPIO_STATE_CMD);
+   edison_spi_bus bus = &edison_bus[ctx->bus_id];
+   gpio_cfg_state(bus->dc, GPIO_STATE_DAT);
    mraa_result_t status = mraa_spi_transfer_buf(bus->spi, bytes, 0, num_bytes);
    if (status != MRAA_SUCCESS)
       somax_log_add(SOMAX_LOG_ERR, "SPI(%d). write command bytes failed\n", ctx->bus_id);
-   gpio_cfg_state(bus->dc, GPIO_STATE_DAT);
+   gpio_cfg_state(bus->dc, GPIO_STATE_CMD);
 }
 
-void edison_bus_write_dat_words(spi_context ctx, uint16_t *words, int num_words)
+void edison_write_dat_words(spi_context ctx, uint16_t *words, int num_words)
 {
-   edison_spi_bus bus = &spi_bus[ctx->bus_id];
+   edison_spi_bus bus = &edison_bus[ctx->bus_id];
    gpio_cfg_state(bus->dc, GPIO_STATE_DAT);
    mraa_result_t status = mraa_spi_transfer_buf_word(bus->spi, words, 0, num_words);
    if (status != MRAA_SUCCESS)

@@ -68,6 +68,7 @@ struct SSD1351_DEVICE
    spi_busid spi_bus_id;
    int spi_chip_select;
    int spi_mode;
+   int spi_frequency;
    spi_context spi_bus;
 };
 typedef SSD1351_DEVICE* ssd1351_device;
@@ -85,7 +86,7 @@ static bool ssd1351_init(ssd1351_device device);
 //------------------------------------------------------------------------------
 static SSD1351_DEVICE devices[SSD1351_NUM_DEVICEID+1] =
 {
-   {0,0,0,0},
+   {0,0,0,0,0},
    {
       SPI_BUSID_0,
       SPI_CHIPSELECT_0,
@@ -123,9 +124,22 @@ void ssd1351_ini_close(viddisp_deviceid id)
 
 }
 
-void ssd1351_opr_display_buffer(viddisp_deviceid id, viddisp_frame_buffer buffer)
+void ssd1351_opr_display_buffer(viddisp_deviceid device_id, viddisp_frame_buffer buffer)
 {
+   SSD1351_DEVICE *device = &devices[device_id];
 
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_SETCOLUMN);
+   spi_dat_write_byte(device->spi_bus, 0);
+   spi_dat_write_byte(device->spi_bus, SSD1351_WIDTH - 1);
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_SETROW);
+   spi_dat_write_byte(device->spi_bus, 0);
+   spi_dat_write_byte(device->spi_bus, SSD1351_HEIGHT - 1);
+   // fill!
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_WRITERAM);
+
+   int max_tx_lines = 4;
+   for (uint16_t i = 0; i < SSD1351_HEIGHT / max_tx_lines; i++)
+      spi_dat_write_bytes(device->spi_bus, &buffer[SSD1351_WIDTH * i * max_tx_lines * 2], SSD1351_WIDTH * max_tx_lines * 2);
 }
 
 //------------------------------------------------------------------------------
@@ -138,7 +152,7 @@ static bool ssd1351_init(ssd1351_device device)
    spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_COMMANDLOCK);
    spi_dat_write_byte(device->spi_bus, 0x12);
 
-   //todo: should ther be 2 command locks
+   //second command lock is intentional
    spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_COMMANDLOCK);
    spi_dat_write_byte(device->spi_bus, 0xB1);
 
@@ -147,4 +161,67 @@ static bool ssd1351_init(ssd1351_device device)
    spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_SETCOLUMN);
    spi_dat_write_byte(device->spi_bus, 0x00);
    spi_dat_write_byte(device->spi_bus, 0x7F);
+
+
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_SETROW);
+   spi_dat_write_byte(device->spi_bus, 0x00);
+   spi_dat_write_byte(device->spi_bus, 0x7F);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_CLOCKDIV);
+   spi_cmd_write_byte(device->spi_bus, 0xF1);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_MUXRATIO);
+   spi_dat_write_byte(device->spi_bus, 0x7F);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_SETREMAP);
+   spi_dat_write_byte(device->spi_bus, 0x74);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_STARTLINE);
+   if (SSD1351_HEIGHT == 96)
+      spi_dat_write_byte(device->spi_bus, 96);
+   else
+      spi_dat_write_byte(device->spi_bus, 0);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_DISPLAYOFFSET);
+   spi_dat_write_byte(device->spi_bus, 0x0);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_SETGPIO);
+   spi_dat_write_byte(device->spi_bus, 0x00);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_FUNCTIONSELECT);
+   spi_dat_write_byte(device->spi_bus, 0x01);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_SETVSL );
+   spi_dat_write_byte(device->spi_bus, 0xA0);
+   spi_dat_write_byte(device->spi_bus, 0xB5);
+   spi_dat_write_byte(device->spi_bus, 0x55);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_CONTRASTABC);
+   spi_dat_write_byte(device->spi_bus, 0xC8);
+   spi_dat_write_byte(device->spi_bus, 0xC8);
+   spi_dat_write_byte(device->spi_bus, 0xC8);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_CONTRASTMASTER);
+   spi_dat_write_byte(device->spi_bus, 0x0F);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_PRECHARGE);
+   spi_cmd_write_byte(device->spi_bus, 0x32);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_DISPLAYENHANCE);
+   spi_dat_write_byte(device->spi_bus, 0xA4);
+   spi_dat_write_byte(device->spi_bus, 0x00);
+   spi_dat_write_byte(device->spi_bus, 0x00);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_PRECHARGE2);
+   spi_cmd_write_byte(device->spi_bus, 0x01);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_VCOMH);
+   spi_cmd_write_byte(device->spi_bus, 0x05);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_NORMALDISPLAY);
+
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_DISPLAYON);
+
+   return true;
 }

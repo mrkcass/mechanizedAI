@@ -10,6 +10,7 @@
 //              video display.
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+#include <pthread.h>
 #include "videocomposer.h"
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -28,8 +29,12 @@ struct VIDCOMP_CONTEXT
    int context_slot;
    int display_id;
    viddisp_context video_display;
-   vidcomp_update_observer update_observer;
-   vidcomp_render_observer render_observer;
+   vidcomp_update_observer update_observer[VIDCOMP_MAX_OBSERVERS];
+   int update_observer_count;
+   vidcomp_render_observer render_observer[VIDCOMP_MAX_OBSERVERS];
+   int render_observer_count;
+   pthread_t refresh_threadid;
+   smx_ui32 refresh_delay;
 };
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -44,7 +49,7 @@ static struct VIDCOMP_CONTEXT context_list[VIDCOMP_MAX_CONTEXTS];
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 static bool vidcomp_can_open(vidcomp_displayid id);
-
+static void *vidcomp_refresh(void *arg);
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //PUBLIC FUNCTIONS
@@ -72,17 +77,54 @@ void vidcomp_ini_close(vidcomp_context ctx)
 {
 }
 
-void vidcomp_add_update_observer(vidcomp_context ctx, vidcomp_update_observer observer)
+bool vidcomp_add_update_observer(vidcomp_context ctx, vidcomp_update_observer observer)
 {
+   if (ctx->update_observer_count >= VIDCOMP_MAX_OBSERVERS)
+   {
+      somax_log_add(SOMAX_LOG_ERR, "VIDEOCOMPOSER: add update observer. can't add, max observers reached");
+      return false;
+   }
+
+   ctx->update_observer[ctx->update_observer_count] = observer;
+   ctx->update_observer_count++;
+
+   return true;
 }
 
-void vidcomp_add_render_observer(vidcomp_context ctx, vidcomp_render_observer observer)
+bool vidcomp_add_render_observer(vidcomp_context ctx, vidcomp_render_observer observer)
 {
+   if (ctx->render_observer_count >= VIDCOMP_MAX_OBSERVERS)
+   {
+      somax_log_add(SOMAX_LOG_ERR, "VIDEOCOMPOSER: add render observer. can't add, max observers reached");
+      return false;
+   }
+
+   ctx->render_observer[ctx->render_observer_count] = observer;
+   ctx->render_observer_count++;
+
+   return true;
 }
 
 viddisp_context vidcomp_inf_videodisplay(vidcomp_context ctx)
 {
    return ctx->video_display;
+}
+
+bool vidcomp_opr_run(vidcomp_context ctx, int frame_rate)
+{
+   if (ctx->refresh_threadid)
+   {
+      somax_log_add(SOMAX_LOG_WARN, "VIDEOCOMPOSER: run. refresh thread already running");
+      return true;
+   }
+   ctx->refresh_delay = (1000 / frame_rate) * U_MILLISECOND;
+   int error = pthread_create(&ctx->refresh_threadid, NULL, &vidcomp_refresh, ctx);
+   if (error)
+   {
+      somax_log_add(SOMAX_LOG_ERR, "VIDEOCOMPOSER: run. refresh thread could not be created");
+      return false;
+   }
+   return true;
 }
 
 //------------------------------------------------------------------------------
@@ -104,4 +146,27 @@ static bool vidcomp_can_open(vidcomp_displayid id)
    }
 
    return true;
+}
+
+static void *vidcomp_refresh(void *arg)
+{
+   vidcomp_context composer = (vidcomp_context)arg;
+   pixbuf_context frame_buffer = viddisp_inf_framebuffer(composer->video_display);
+   while (1)
+   {
+      somax_sleep(composer->refresh_delay);
+      for (int i = 0; i < VIDCOMP_MAX_OBSERVERS; i++)
+      {
+         if (!composer->update_observer[i])
+            continue;
+         composer->update_observer[i](composer);
+      }
+      for (int i = 0; i < VIDCOMP_MAX_OBSERVERS; i++)
+      {
+         if (!composer->render_observer[i])
+            continue;
+         composer->render_observer[i](composer, frame_buffer);
+      }
+      viddisp_opr_refresh(composer->video_display);
+   }
 }

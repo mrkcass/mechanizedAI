@@ -48,6 +48,9 @@ at boot.
 #
 **Status**
 
+* October 17,2018 - the thermal camera is operational and is displaying output on
+  the frame 1.5" oled. The colors are not correct at the moment but that is for
+  tommorrow!
 * October 16, 2018 - finished SPI interface. Added a few extras to GPIO interface.
   completed work on videodisplay. started videodisplay_ssd1351 and about half way done
   with the implementation. ssd1351 and the video pipeline will be ready for testing

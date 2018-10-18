@@ -5,13 +5,13 @@ PROJ_NAME=somax_ui
 OBJECT_FILES = somaxui_main.o				\
 					videocomposer.o			\
 					videodisplay.o				\
+					videodisplay_ssd1351.o	\
 					pixelbuffer.o				\
 					inputmixer.o				\
 					inputsource.o				\
 					inputevent.o				\
 					gpio_interface.o			\
 					spi_interface.o			\
-					color_oled.o				\
 
 
 SRC_DIR = src

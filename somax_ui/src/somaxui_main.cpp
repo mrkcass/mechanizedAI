@@ -14,6 +14,8 @@
 #include "adc50.h"
 #include "joystick3d_stick.h"
 #include "mcu_motor_controller.h"
+#include "videocomposer.h"
+#include "thermalcamera.h"
 
 //#define KEYPRESS_ENABLED 1
 
@@ -53,6 +55,14 @@ int joy3d_open_adc();
 int joy3d_open_stick(bool test_mode);
 int joy3d_close();
 
+vidcomp_context vidcomposer;
+void thermcam_update_observer(vidcomp_context ctx);
+void thermcam_render_observer(vidcomp_context ctx, pixbuf_context frame_buffer);
+
+thermcam_framedata_buffer thermcam_framebuffer;
+thermcam_context thermcam;
+static bool thermcam_server_run();
+
 extern void mcu_main_init();
 
 int main(int argc, char *argv[])
@@ -68,6 +78,16 @@ int main(int argc, char *argv[])
    int return_code = 0;
 
    libhardware_init();
+
+   vidcomposer = vidcomp_ini_open(VIDCOMP_DISPLAYID_FRAME_PRIMARY);
+   vidcomp_add_update_observer(vidcomposer, thermcam_update_observer);
+   vidcomp_add_render_observer(vidcomposer, thermcam_render_observer);
+
+   if (!thermcam_server_run())
+      return 1;
+
+   if (!vidcomp_opr_run(vidcomposer, 5))
+      return 1;
 
    return_code = joy3d_open_adc();
 
@@ -225,6 +245,7 @@ void joy3d_notify_motor_controller(int motor, int speed)
          printf("JOY3D: stick enabled. powering on motors\n");
          sprintf(motor_cmd, POWER_ON_CMD);
          mcu_process_message(motor_cmd, NULL);
+         #if 0
          sprintf(motor_cmd, STEP_CMD, motor_id[MOTOR_TILT], NEGATIVE_SPEED, 1, 50);
          mcu_process_message(motor_cmd, NULL);
          while (1)
@@ -259,6 +280,7 @@ void joy3d_notify_motor_controller(int motor, int speed)
             if (pos_y == -70)
                break;
          }
+         #endif
          stick_enabled = true;
       }
 
@@ -314,4 +336,121 @@ int joy3d_test_adc()
       usleep(1000000 / 20);
    }
    return 0;
+}
+
+bool thermcam_receiving_frame = false;
+bool thermcam_displaying_frame = false;
+thermcam_framedata_buffer current_framedata;
+pixbuf_context thermcam_displaybuffer = 0;
+void thermcam_update_observer(vidcomp_context ctx)
+{
+   if (thermcam_receiving_frame)
+      return;
+
+   thermcam_displaying_frame = true;
+   if (!thermcam_displaybuffer)
+      thermcam_displaybuffer = viddisp_opr_newpixbuf(vidcomp_inf_videodisplay(vidcomposer), 128, 128);
+
+   smx_byte * pixels = pixbuf_inf_pixels(thermcam_displaybuffer);
+   for (int i = 0; i < 64; i++)
+   {
+      float temp = current_framedata[i];
+      int col_stride = 2 * 16;
+      int row_stride = col_stride * 128;
+      int row_bytes = 128 * 2;
+      int pixel_bytes = 2;
+
+      int row = i % 8;
+      int col = i / 8;
+      uint8_t r,g,b;
+
+      r = 0;
+      g = 0;
+      b = 0;
+
+      uint16_t color;
+      float max_temp = 100.0;
+      float min_temp = 30.0;
+      float temp_cutoff = 82.0;
+      if (temp > temp_cutoff)
+      {
+         //color =  (16 + (uint16_t)(16.0 * ((100.0 - temp) / 25.0))) & 0x1F;
+         float color_diff = 64.0 * (max_temp - temp) / (max_temp - temp_cutoff);
+         if (color_diff > 129.0 || color_diff < 0)
+            printf("color too hihgh\n");
+         r = 255 - (uint8_t)color_diff;
+      }
+      else
+      {
+         //color = ((16 + (uint16_t)(16.0 * ((75.0 - temp) / 25.0))) & 0x1F) << 15;
+         float color_diff = 128.0 * (temp_cutoff - temp) / (temp_cutoff - min_temp);
+         g = 255 - (uint8_t)color_diff;
+      }
+
+      // uint16_t b5 = ((b >> 3) & 0x1f) << 0;
+      // uint16_t g6 = ((g >> 2) & 0x3f) << 5;
+      // uint16_t r5 = ((r >> 3) & 0x1f) << 11;
+      // color = (uint16_t)(b5 | g6 | r5);
+
+      color = b >> 3;
+      color <<= 6;
+      color |= g >> 2;
+      color <<= 5;
+      color |= r >> 3;
+      int location;
+      for (int row_offset=0; row_offset < 16; row_offset++)
+      {
+         for (int col_offset = 0; col_offset < 16; col_offset++)
+         {
+            location = (row_stride*row)+(row_bytes * row_offset) + (col_stride*col)+(pixel_bytes * col_offset);
+            uint8_t * pixel_bytes = &pixels[location];
+            uint8_t color_lo = (uint8_t)(color & 0xf);
+            uint8_t color_hi = (uint8_t)((color>>8) & 0xf);
+            pixel_bytes[0] = color_lo;
+            pixel_bytes[1] = color_hi;
+            // uint16_t * pixel = (uint16_t*)&pixels[location];
+            // *pixel = color;
+         }
+      }
+   }
+}
+
+void thermcam_render_observer(vidcomp_context ctx, pixbuf_context frame_buffer)
+{
+   memcpy(pixbuf_inf_pixels(frame_buffer), pixbuf_inf_pixels(thermcam_displaybuffer), 128 * 128 * 2);
+   thermcam_displaying_frame = false;
+}
+
+void thermcam_observer(thermcam_context ctx, thermcam_observer_id observer_id, thermcam_framedata_buffer return_buffer)
+{
+   if (thermcam_displaying_frame)
+      return;
+
+   thermcam_receiving_frame = true;
+   memcpy(current_framedata, return_buffer, THERMCAM_FRAMEBUFFER_MAX_SIZE*sizeof(float));
+   thermcam_receiving_frame = false;
+}
+
+static void* thermcam_server(void *arg)
+{
+   thermcam = thermcam_open(THERMCAMID_GIMBAL);
+
+   thermcam_cfg_output_units(thermcam, THERMCAM_OUTPUTUNITS_FARENHEIT);
+   thermcam_cfg_observer_framedata(thermcam, 0, thermcam_observer, &thermcam_framebuffer);
+
+   thermcam_run(thermcam, THERMCAM_NUMFRAMES_CONTINUOUS);
+
+   return 0;
+}
+
+static bool thermcam_server_run()
+{
+   pthread_t thread_id;
+   int error = pthread_create(&thread_id, NULL, &thermcam_server, NULL);
+   if (error)
+   {
+      somax_log_add(SOMAX_LOG_ERR, "THERMCAMSERVER: run. thread could not be created");
+      return false;
+   }
+   return true;
 }
