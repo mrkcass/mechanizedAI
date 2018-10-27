@@ -1,6 +1,7 @@
 #ifndef __bno055_h__
 #define __bno055_h__
 
+#include "somax.h"
 #include "ahrs.h"
 
 #define BNO_NUM_DEVICES    2
@@ -13,12 +14,16 @@
 #define BNO_AXIS_Z   2
 
 #define BNO_SIGN_NEGATIVE    -1
-#define BNO_SIGN_SAME        0
-#define BNO_SIGN_POSITIVE    1
+#define BNO_SIGN_SAME         0
+#define BNO_SIGN_POSITIVE     1
+
+#define BNO_RUNMODE_PANTILTROT   0
+#define BNO_RUNMODE_ACCMAGGYRO   1
 
 ahrs_context bno055_open(ahrs_id ahrs);
 void bno055_close();
 void bno055_configure_axis(ahrs_context ahrs, int axis, int mapped_axis, int mapped_sign);
+void bno055_cfg_run_mode(ahrs_context ahrs, smx_byte mode);
 int  bno055_run();
 void bno055_info(ahrs_context ahrs);
 void bno055_output_callbk_euler(ahrs_context ahrs, AHRS_EULER_CALLBACK euler_callbk);

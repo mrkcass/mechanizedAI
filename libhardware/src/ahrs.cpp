@@ -44,6 +44,16 @@ void ahrs_info(ahrs_context ahrs)
    bno055_info(ahrs);
 }
 
+int ahrs_cfg_run_mode(ahrs_context ahrs, smx_byte mode)
+{
+   if (mode == AHRS_RUNMODE_IMU)
+      bno055_cfg_run_mode(ahrs, BNO_RUNMODE_ACCMAGGYRO);
+   else
+      bno055_cfg_run_mode(ahrs, BNO_RUNMODE_PANTILTROT);
+
+   return 0;
+}
+
 int ahrs_test(int output_format)
 {
    printf("starting test: \n");

@@ -8,7 +8,7 @@
 #define BNO_CAMD_I2C_BUS        1
 #define BNO_CAMD_I2C_ADDRESS    0x29
 #define BNO_FRAME_I2C_BUS       0
-#define BNO_FRAME_I2C_ADDRESS   0x29
+#define BNO_FRAME_I2C_ADDRESS   0x28
 
 #define BNO_REG_PAGEID           0x00
 #define BNO_REG_CHIPID           0x00
@@ -192,6 +192,7 @@ struct BNO_CONTEXT
    AHRS_MAGNETOMETER_CALLBACK magnetometer_observer;
    int axis_map;
    int axis_sign;
+   smx_byte run_mode;
 };
 
 
@@ -272,6 +273,12 @@ ahrs_context bno055_open(ahrs_id id)
 
 void bno055_close()
 {
+}
+
+void bno055_cfg_run_mode(ahrs_context ahrs, smx_byte mode)
+{
+   BNO_CONTEXT *ctx = (BNO_CONTEXT *)ahrs;
+   ctx->run_mode = mode;
 }
 
 void bno055_configure_axis(ahrs_context ahrs, int axis, int mapped_axis, int mapped_sign)
@@ -498,7 +505,10 @@ static void bno055_run_configure_device(int dev_id)
    i2c_reg_write_byte(contexts[dev_id].i2c, BNO_REG_AXIS_MAP, contexts[dev_id].axis_map);
    i2c_reg_write_byte(contexts[dev_id].i2c, BNO_REG_AXIS_SIGN, contexts[dev_id].axis_sign);
 
-   i2c_reg_write_byte(contexts[dev_id].i2c, BNO_REG_OPR_MODE, BNO_OPR_MODE_ACCMAGGYRO);
+   if (contexts[dev_id].run_mode == BNO_RUNMODE_ACCMAGGYRO)
+      i2c_reg_write_byte(contexts[dev_id].i2c, BNO_REG_OPR_MODE, BNO_OPR_MODE_ACCMAGGYRO);
+   else
+      i2c_reg_write_byte(contexts[dev_id].i2c, BNO_REG_OPR_MODE, BNO_OPR_MODE_NDOF);
 
    usleep(SWITCH_FROM_CONFIG_MS * 20 * U_MILLISECOND);
 

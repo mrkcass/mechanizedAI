@@ -1,6 +1,8 @@
 #ifndef __ahrs_h__
 #define __ahrs_h__
 
+#include "somax.h"
+
 #define AHRS_NUM_DEVICES   2
 #define AHRS_ID_FRAME      1
 #define AHRS_ID_CAMD       2
@@ -18,6 +20,9 @@
 #define AHRS_OUTPUTFORMAT_QUATERNION      2
 #define AHRS_OUTPUTFORMAT_MAGNETOMETER    4
 
+#define AHRS_RUNMODE_AHRS           0
+#define AHRS_RUNMODE_IMU            1
+
 struct AHRS_CONTEXT;
 
 typedef int ahrs_id;
@@ -30,6 +35,7 @@ ahrs_context ahrs_open(ahrs_id id);
 void ahrs_close();
 void ahrs_info(ahrs_context ahrs);
 int ahrs_context_to_id(ahrs_context ahrs);
+int ahrs_cfg_run_mode(ahrs_context ahrs, smx_byte mode);
 int ahrs_test(int output_format);
 int ahrs_run(AHRS_EULER_CALLBACK euler_callbk, AHRS_QUATERNION_CALLBACK quaternion_callbk, AHRS_MAGNETOMETER_CALLBACK magnetometer_callbk);
 
