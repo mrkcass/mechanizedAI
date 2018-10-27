@@ -35,6 +35,7 @@ int bfactor = 3 * wbfactor;
 float min_kbit_rate = 500;
 float max_kbit_rate = 600;
 
+#if 0
 int main(int argc, char ** argv)
 {
     printf("\nStarting Driver: LEDSTRIP-WS2812B\n");
@@ -92,6 +93,7 @@ int main(int argc, char ** argv)
 
     return 0;
 }
+#endif
 
 void reset(struct GPIOPINS * gpio)
 {
