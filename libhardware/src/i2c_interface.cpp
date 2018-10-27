@@ -166,6 +166,30 @@ int i2c_dev_read_byte(i2c_context i2c)
    return byte_read;
 }
 
+int i2c_reg16_read_byte(i2c_context i2c, uint16_t address)
+{
+   mraa_i2c_context bus = i2c_bus[i2c->bus_id];
+
+   i2c_latch_device(i2c);
+
+   uint8_t bytes[2];
+   bytes[0] = address >> 8;
+   bytes[1] = address & 0xFF;
+   int write_status = mraa_i2c_write(bus, bytes, 2);
+   if (write_status != MRAA_SUCCESS)
+   {
+      printf("Error: i2c couldn't write device bytes\n");
+   }
+
+   int byte_read = mraa_i2c_read_byte(bus);
+   if (byte_read == -1)
+   {
+      printf("Error: i2c couldn't read device byte\n");
+   }
+
+   return byte_read;
+}
+
 int i2c_dev_read_word(i2c_context i2c)
 {
    uint8_t read_buff[2];
@@ -179,7 +203,32 @@ int i2c_dev_read_word(i2c_context i2c)
       printf("Error: i2c couldn't read device word\n");
    }
 
-   return num_bytes_read;
+   return read_buff[0] << 8 | read_buff[1];
+}
+
+int i2c_reg16_read_word(i2c_context i2c, uint16_t address)
+{
+   mraa_i2c_context bus = i2c_bus[i2c->bus_id];
+
+   i2c_latch_device(i2c);
+
+   uint8_t bytes[2];
+   bytes[0] = address >> 8;
+   bytes[1] = address & 0xFF;
+   int write_status = mraa_i2c_write(bus, bytes, 2);
+   if (write_status != MRAA_SUCCESS)
+   {
+      printf("Error: i2c couldn't write device bytes\n");
+   }
+
+   int msb = mraa_i2c_read_byte(bus);
+   int lsb = mraa_i2c_read_byte(bus);
+   if (msb == -1 || lsb == -1)
+   {
+      printf("Error: i2c couldn't read device byte\n");
+   }
+
+   return ((msb & 0xFF) << 8) | (lsb & 0xFF);
 }
 
 int i2c_dev_read_bytes(i2c_context i2c, uint8_t *buffer, int num_bytes)
@@ -232,13 +281,22 @@ int i2c_dev_write_2bytes(i2c_context i2c, uint8_t byte0, uint8_t byte1)
    return write_status;
 }
 
-int i2c_dev_write_bytes(i2c_context i2c, uint8_t *byte, uint8_t *buffer, int num_bytes)
+int i2c_reg16_write_byte(i2c_context i2c, uint16_t address, uint8_t byte)
 {
-   int write_status;
    mraa_i2c_context bus = i2c_bus[i2c->bus_id];
 
    i2c_latch_device(i2c);
-   write_status = mraa_i2c_write(bus, buffer, num_bytes);
+
+   uint8_t bytes[2];
+   bytes[0] = address >> 8;
+   bytes[1] = address & 0xFF;
+   int write_status = mraa_i2c_write(bus, bytes, 2);
+   if (write_status != MRAA_SUCCESS)
+   {
+      printf("Error: i2c couldn't write device bytes\n");
+   }
+
+   write_status = mraa_i2c_write_byte(bus, byte);
    if (write_status != MRAA_SUCCESS)
    {
       printf("Error: i2c couldn't write device bytes\n");
@@ -247,16 +305,70 @@ int i2c_dev_write_bytes(i2c_context i2c, uint8_t *byte, uint8_t *buffer, int num
    return write_status;
 }
 
+int i2c_reg16_write_2bytes(i2c_context i2c, uint16_t address, uint8_t byte0, uint8_t byte1)
+{
+   uint8_t bytes[2];
 
+   mraa_i2c_context bus = i2c_bus[i2c->bus_id];
 
+   i2c_latch_device(i2c);
 
+   bytes[0] = address >> 8;
+   bytes[1] = address & 0xFF;
+   int write_status = mraa_i2c_write(bus, bytes, 2);
+   if (write_status != MRAA_SUCCESS)
+   {
+      printf("Error: i2c couldn't write device bytes\n");
+   }
 
+   bytes[0] = byte0;
+   bytes[1] = byte1;
+   write_status = mraa_i2c_write(bus, bytes, 2);
+   if (write_status != MRAA_SUCCESS)
+   {
+      printf("Error: i2c couldn't write device bytes\n");
+   }
 
+   return write_status;
+}
 
+int i2c_dev_write_bytes(i2c_context i2c, uint8_t *bytes, int num_bytes)
+{
+   int write_status;
+   mraa_i2c_context bus = i2c_bus[i2c->bus_id];
 
+   i2c_latch_device(i2c);
+   write_status = mraa_i2c_write(bus, bytes, num_bytes);
+   if (write_status != MRAA_SUCCESS)
+   {
+      printf("Error: i2c couldn't write device bytes\n");
+   }
 
+   return write_status;
+}
 
+int i2c_reg16_write_bytes(i2c_context i2c, uint16_t address, uint8_t *bytes, int num_bytes)
+{
+   mraa_i2c_context bus = i2c_bus[i2c->bus_id];
 
+   i2c_latch_device(i2c);
+   uint8_t buff[2];
+   buff[0] = address >> 8;
+   buff[1] = address & 0xFF;
+   int write_status = mraa_i2c_write(bus, buff, 2);
+   if (write_status != MRAA_SUCCESS)
+   {
+      printf("Error: i2c couldn't write device bytes\n");
+   }
+
+   write_status = mraa_i2c_write(bus, bytes, num_bytes);
+   if (write_status != MRAA_SUCCESS)
+   {
+      printf("Error: i2c couldn't write device bytes\n");
+   }
+
+   return write_status;
+}
 
 
 
