@@ -15,6 +15,8 @@
 #include "spi_interface.h"
 #include "videodisplay_ssd1351.h"
 
+//todo: this file should be spilt into an ssd1351 & videodisplay_128x128_RGB16
+
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //SSD1351 command and configuration constants / data
@@ -197,19 +199,21 @@ static bool ssd1351_init(ssd1351_device device)
    spi_dat_write_byte(device->spi_bus, 0xB5);
    spi_dat_write_byte(device->spi_bus, 0x55);
 
+   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_NORMALDISPLAY);
+
    spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_CONTRASTABC);
    spi_dat_write_byte(device->spi_bus, 0xC8);
-   spi_dat_write_byte(device->spi_bus, 0xC8);
+   spi_dat_write_byte(device->spi_bus, 0x80);
    spi_dat_write_byte(device->spi_bus, 0xC8);
 
    spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_CONTRASTMASTER);
-   spi_dat_write_byte(device->spi_bus, 0x0F);
+   spi_dat_write_byte(device->spi_bus, 0x0f);
 
    spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_PRECHARGE);
    spi_cmd_write_byte(device->spi_bus, 0x32);
 
    spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_DISPLAYENHANCE);
-   spi_dat_write_byte(device->spi_bus, 0xA4);
+   spi_dat_write_byte(device->spi_bus, 0x00);
    spi_dat_write_byte(device->spi_bus, 0x00);
    spi_dat_write_byte(device->spi_bus, 0x00);
 
@@ -219,7 +223,7 @@ static bool ssd1351_init(ssd1351_device device)
    spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_VCOMH);
    spi_cmd_write_byte(device->spi_bus, 0x05);
 
-   spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_NORMALDISPLAY);
+
 
    spi_cmd_write_byte(device->spi_bus, SSD1351_CMD_DISPLAYON);
 

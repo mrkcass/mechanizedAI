@@ -3,15 +3,16 @@
 PROJ_NAME=somax_ui
 
 OBJECT_FILES = somaxui_main.o				\
+													\
+					thermalview.o				\
+													\
 					videocomposer.o			\
 					videodisplay.o				\
 					videodisplay_ssd1351.o	\
 					pixelbuffer.o				\
 					inputmixer.o				\
 					inputsource.o				\
-					inputevent.o				\
-					gpio_interface.o			\
-					spi_interface.o			\
+					inputevent.o
 
 
 SRC_DIR = src
@@ -25,7 +26,7 @@ INCLUDE_PATHS = -I. -I/usr/include -I../libhardware/src
 CFLAGS = -Wall -O2
 
 LIB_PATHS = -L/usr/lib -L../libhardware
-LIBS = -lpthread -lmraa -lhardware
+LIBS = -lpthread -lmraa -lhardware -lopencv_core -lopencv_imgproc
 
 OBJ = $(patsubst %,$(OBJ_DIR)/%,$(OBJECT_FILES))
 
