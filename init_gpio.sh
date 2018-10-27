@@ -117,6 +117,27 @@ echo "  GPIO42 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio42/current_pinmux)
 echo "  GPIO42 direction: $(cat /sys/kernel/debug/gpio_debug/gpio42/current_direction)"
 echo "  GPIO42 pullmode: $(cat /sys/kernel/debug/gpio_debug/gpio42/current_pullmode)"
 
+if [[ ! -e /sys/class/gpio/gpio77 ]]; then
+   echo 77 > /sys/class/gpio/export
+fi
+echo "mode0" > /sys/kernel/debug/gpio_debug/gpio77/current_pinmux
+echo "out" > /sys/kernel/debug/gpio_debug/gpio77/current_direction
+echo "pullup" > /sys/kernel/debug/gpio_debug/gpio77/current_pullmode
+echo "high" > /sys/kernel/debug/gpio_debug/gpio77/current_value
+echo "  GPIO77 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio77/current_pinmux)"
+echo "  GPIO77 direction: $(cat /sys/kernel/debug/gpio_debug/gpio77/current_direction)"
+echo "  GPIO77 pullmode: $(cat /sys/kernel/debug/gpio_debug/gpio77/current_pullmode)"
+
+if [[ ! -e /sys/class/gpio/gpio82 ]]; then
+   echo 82 > /sys/class/gpio/export
+fi
+echo "mode0" > /sys/kernel/debug/gpio_debug/gpio82/current_pinmux
+echo "in" > /sys/kernel/debug/gpio_debug/gpio82/current_direction
+echo "pullup" > /sys/kernel/debug/gpio_debug/gpio82/current_pullmode
+echo "  GPIO82 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio82/current_pinmux)"
+echo "  GPIO82 direction: $(cat /sys/kernel/debug/gpio_debug/gpio82/current_direction)"
+echo "  GPIO82 pullmode: $(cat /sys/kernel/debug/gpio_debug/gpio82/current_pullmode)"
+
 
 motors="MTRPAN MTRTILTL MTRTILTU MTRROTATE"
 motor_wires="IN1 IN2 IN3 IN4"
@@ -133,10 +154,10 @@ declare -A motor_gpio_pin=(
    [MTRTILTU-IN2]="46"
    [MTRTILTU-IN3]="48"
    [MTRTILTU-IN4]="14"
-   [MTRTITLL-IN1]="84"
+   [MTRTILTL-IN1]="84"
    [MTRTILTL-IN2]="45"
    [MTRTILTL-IN3]="47"
-   [MTRTLTL-IN4]="49"
+   [MTRTILTL-IN4]="49"
 )
 declare -A motor_gpio_direction=(
    [MTRPAN-IN1]="out"
