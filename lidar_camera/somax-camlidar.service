@@ -1,0 +1,13 @@
+[Unit]
+Description=Somax Thermal Camera
+After=somax.service
+
+[Service]
+TimeoutStartSec=5
+ExecStart=/root/thermal_camera/thermal_camera run-sleep
+Environment="HOME=/home/root"
+WorkingDirectory=/root/thermal_camera
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
