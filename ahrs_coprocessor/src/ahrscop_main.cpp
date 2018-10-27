@@ -61,16 +61,29 @@ int main(int argc, char *argv[])
    else if (!return_code && somax_commandline_has_option(argc, argv, "test"))
    {
       ahrscop_info();
-      ahrs_test(AHRS_OUTPUTFORMAT_EULER);
+      ahrs_cfg_run_mode(ahrs_camd, AHRS_RUNMODE_AHRS);
+      ahrs_cfg_run_mode(ahrs_frame, AHRS_RUNMODE_AHRS);
+      ahrs_test(AHRS_OUTPUTFORMAT_QUATERNION);
    }
    else if (!return_code && somax_commandline_has_option(argc, argv, "test-mag"))
    {
-      printf ("AHRS testing magnetometer\n");
+      ahrs_cfg_run_mode(ahrs_camd, AHRS_RUNMODE_IMU);
+      ahrs_cfg_run_mode(ahrs_frame, AHRS_RUNMODE_IMU);
       ahrscop_info();
       ahrs_test(AHRS_OUTPUTFORMAT_MAGNETOMETER);
    }
-   else if (!return_code && somax_commandline_has_option(argc, argv, "run"))
+   else if (!return_code && somax_commandline_has_option(argc, argv, "run-ahrs"))
+   {
+      ahrs_cfg_run_mode(ahrs_camd, AHRS_RUNMODE_AHRS);
+      ahrs_cfg_run_mode(ahrs_frame, AHRS_RUNMODE_AHRS);
       ahrs_test(AHRS_OUTPUTFORMAT_QUATERNION);
+   }
+   else if (!return_code && somax_commandline_has_option(argc, argv, "run-imu"))
+   {
+      ahrs_cfg_run_mode(ahrs_camd, AHRS_RUNMODE_IMU);
+      ahrs_cfg_run_mode(ahrs_frame, AHRS_RUNMODE_IMU);
+      ahrs_test(AHRS_OUTPUTFORMAT_MAGNETOMETER);
+   }
 
    ahrscop_close();
    mraa_deinit();
@@ -89,13 +102,16 @@ void ahrscop_display_help()
    printf("  commands:\n");
    printf("    info\n");
    printf("       Read and print ahrs device information\n");
-   printf("    test-camd\n");
-   printf("       Intialize the CAMD AHRS and display readings to stdout.\n");
-   printf("    test-frame\n");
-   printf("       Intialize the FRAME AHRS and display readings to stdout.\n");
-   printf("    run\n");
-   printf("       Initialize and collect data from CAMD & FRAME AHRS\n");
+   printf("    test\n");
+   printf("       Intialize both AHRS and display heading, pitch, & yaw data to console.\n");
+   printf("    test-mag\n");
+   printf("       Intialize both AHRS and return magnetometer data to console.\n");
+   printf("    run-ahrs\n");
+   printf("       Initialize both AHRS and use coprcessor for more accurate readings\n");
    printf("       until control-c.\n");
+   printf("    run-imu\n");
+   printf("       Initialize both AHRS and return accelerometer, gyroscope and\n");
+   printf("       magnetometer data until control-c.\n");
 }
 
 int ahrscop_open_camd()
