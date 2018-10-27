@@ -21,7 +21,7 @@ typedef int (*BUTTON_SAMPLER)();
 #define JOY3D_NUM_AXIS     3
 #define JOY3D_NUM_BTN      1
 
-#define CALIBRATION_FILE "joystick3d.calibration"
+#define CALIBRATION_FILE "/root/configuration/joystick3d.calibration"
 
 struct AxisData;
 
