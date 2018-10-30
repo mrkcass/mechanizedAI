@@ -126,22 +126,18 @@ static struct DEVICE_FUNCS device_ops[VIDDISP_NUM_DISPLAYID+1] =
 //------------------------------------------------------------------------------
 viddisp_context viddisp_ini_open(viddisp_displayid display_id)
 {
-   printf("debug1\n");
    if (!viddisp_can_open(display_id))
    {
       somax_log_add(SOMAX_LOG_ERR, "VIDEODISPLAY. open. unknown display id: %d", display_id);
       return 0;
    }
-   printf("debug2\n");
+
    DEVICE_PROPS * vprops = &device_props[display_id];
    DEVICE_FUNCS * vops = &device_ops[display_id];
    if (!vprops->frame_buffer)
    {
-      printf("debug3\n");
       vops->ini_open(vprops->device_id);
-      printf("debug4 -> %d (%d)\n", display_id, vprops->pixel_format);
       vprops->frame_buffer = pixbuf_ini_open(vprops->pixel_format, vprops->width, vprops->height);
-      printf("debug5\n");
    }
 
    viddisp_context new_ctx = &context_list[contextlist_used];

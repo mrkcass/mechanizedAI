@@ -115,16 +115,16 @@ bool vidcomp_opr_run(vidcomp_context ctx, int frame_rate)
    if (ctx->refresh_threadid)
    {
       somax_log_add(SOMAX_LOG_WARN, "VIDEOCOMPOSER: run. refresh thread already running");
-      return true;
+      return false;
    }
    ctx->refresh_delay = (1000 / frame_rate) * U_MILLISECOND;
    int error = pthread_create(&ctx->refresh_threadid, NULL, &vidcomp_refresh, ctx);
    if (error)
    {
       somax_log_add(SOMAX_LOG_ERR, "VIDEOCOMPOSER: run. refresh thread could not be created");
-      return false;
+      return true;
    }
-   return true;
+   return false;
 }
 
 //------------------------------------------------------------------------------

@@ -4,7 +4,11 @@ PROJ_NAME=somax_ui
 
 OBJECT_FILES = somaxui_main.o				\
 													\
-					thermalview.o				\
+					somaxui_menu.o				\
+					app_thermalview.o 		\
+					app_gimbalhold.o			\
+													\
+					gimbal.o						\
 													\
 					videocomposer.o			\
 					videodisplay.o				\
@@ -12,7 +16,7 @@ OBJECT_FILES = somaxui_main.o				\
 					pixelbuffer.o				\
 					inputmixer.o				\
 					inputsource.o				\
-					inputevent.o
+					inputevent.o				\
 
 
 SRC_DIR = src
