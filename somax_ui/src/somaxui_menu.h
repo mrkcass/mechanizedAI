@@ -12,27 +12,34 @@
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-#define SUIMENU_MENU_MAX_ITEMS 10
+//SUIMENU is short for:
+//  Somax User Interface Menu
 
-#define SUIMENU_MENUID_NULL   0
-#define SUIMENU_MENUID_BACK 1
-#define SUIMENU_MENUID_USER1 2
+#include "videocomposer.h"
+
+#define SUIMENU_MENU_MAX_ITEMS 8
+
+#define SUIMENU_MENUID_NULL         0
+#define SUIMENU_MENUID_APPLICATION  1
+#define SUIMENU_MENUID_BACK         2
+#define SUIMENU_MENUID_EXIT         3
+
+#define SUIMENU_ITEM_MAX_CHARS 16
 
 struct SUIMENU_CONTEXT;
 typedef struct SUIMENU_CONTEXT *suimenu_context;
 typedef int suimenu_menuid;
 typedef int suimenu_itemid;
 
-typedef void (*suimenu_observer_selected)(suimenu_context ctx);
+typedef void (*suimenu_observer)(suimenu_menuid menu_id, suimenu_itemid item_id);
 
-suimenu_context suimenu_ini_open(viddisp_context ctx);
+suimenu_context suimenu_ini_open(vidcomp_context video_composer);
 void suimenu_ini_close(suimenu_context ctx);
+suimenu_menuid suimenu_cfg_addmenu(suimenu_context menu, char *text);
+suimenu_itemid suimenu_cfg_additem(suimenu_context menu, suimenu_menuid menu_id, char * text,
+                                   suimenu_menuid submenu_id, suimenu_observer selected_observer);
 
-suimenu_id suimenu_cfg_additem(suimenu_context menu, char * text);
-void suimenu_cfg_select_observer(suimenu_context menu);
-void suimenu_cfg_attach_to_composer(suimenu_context menu, vidcomp_context vidcomp);
-void suimenu_cfg_attach_to_mixer(suimenu_context menu);
-
-suimenu_id suimenu_opr_show(suimenu_context menu, bool show);
+bool suimenu_inf_showing(suimenu_context menu);
+void suimenu_opr_show(suimenu_context menu, bool show);
 
 #endif

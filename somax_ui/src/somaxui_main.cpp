@@ -23,10 +23,21 @@
 
 #include "somax.h"
 #include "libhardware.h"
+#include "somaxui_menu.h"
 #include "adc50.h"
 #include "joystick3d_stick.h"
 #include "mcu_motor_controller.h"
+#include "videocomposer.h"
+#include "inputevent.h"
+#include "gimbal.h"
+//todo: this is a hack to sends events without event system being complete
+#include "inputsource.h"
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//CONSTANTS
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //#define KEYPRESS_ENABLED 1
 
 #define SOMAX_NAME "SOMAX-JOY3D"
@@ -44,16 +55,17 @@ struct termios orig_termios;
 #define NUM_AXIS 3
 #define MINMAX_TOLERANCE_FACTOR 200
 
-static Joystick * stick;
-
-
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//FUNCTION DECLARATIONS
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 #ifdef KEYPRESS_ENABLED
 void reset_terminal_mode();
 void set_conio_terminal_mode();
 int kbhit();
 int getch();
 #endif
-int send_to_mcu(char * msg);
 int run(Joystick * jstick_left, Joystick * jstick_right);
 int joy3d_test_adc();
 int joy3d_sample_axis(int axis);
@@ -65,10 +77,28 @@ int joy3d_open_adc();
 int joy3d_open_stick(bool test_mode);
 int joy3d_close();
 
-extern int thermalview_run(int argc, char *argv[]);
+extern int thermalview_init(int argc, char *argv[], suimenu_context main_menu, vidcomp_context video_composer);
+extern int gimbalhold_init(int argc, char *argv[], suimenu_context main_menu, vidcomp_context video_composer);
 
-extern void mcu_main_init();
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//DATA STRUCTURES
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//DATA
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+static Joystick *stick;
+static suimenu_context menu;
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//PUBLIC FUNCTIONS
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
    somax_data_init(SOMAX_NAME, SOMAX_CLASS, SOMAX_VERSION, SOMAX_RESOURCES);
@@ -83,7 +113,14 @@ int main(int argc, char *argv[])
 
    libhardware_init();
 
-   return_code = thermalview_run(argc, argv);
+   vidcomp_context vidcomposer = vidcomp_ini_open(VIDCOMP_DISPLAYID_FRAME_PRIMARY);
+
+   return_code = vidcomp_opr_run(vidcomposer, 5);
+
+   if (!return_code)
+      menu = suimenu_ini_open(vidcomposer);
+   if (!menu)
+      return_code = 1;
 
    if (!return_code)
       return_code = joy3d_open_adc();
@@ -106,7 +143,16 @@ int main(int argc, char *argv[])
    }
 
    if (!return_code)
-      mcu_main_init();
+      gimbal_ini_open();
+
+   if (!return_code)
+      return_code = thermalview_init(argc, argv, menu, vidcomposer);
+
+   if (!return_code)
+      return_code = gimbalhold_init(argc, argv, menu, vidcomposer);
+
+   if (!return_code)
+      suimenu_opr_show(menu, true);
 
    if (!return_code && somax_commandline_has_option(argc, argv, "calibrate"))
       stick->calibrate();
@@ -116,8 +162,6 @@ int main(int argc, char *argv[])
       stick->run();
    else if (!return_code && somax_commandline_has_option(argc, argv, "run"))
    {
-      //motor_controller = new McuMotorController();
-      //motor_controller->PowerOn();
       stick->run();
    }
 
@@ -131,6 +175,11 @@ int main(int argc, char *argv[])
       return return_code;
 }
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//PRIVATE FUNCTIONS
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 bool joy3d_display_help(int argc, char *argv[])
 {
    int show_help = false;
@@ -204,109 +253,72 @@ int joy3d_sample_button()
    return adc50_sample_single_end(3) > BUTTON_ANALOG_THRESHOLD;
 }
 
-static char POWER_ON_CMD[]  =  "poweron       \n";
-static char POWER_OFF_CMD[] =  "poweroff      \n";
-static char SPEED_CMD[] = "speed%c%s%02d      \n";
-//static char STEP_CMD[] = "step%c%s%02d%04d   \n";
-//static char POSITION_CMD[] = "position   \n";
-static char ZERO_SPEED[] = "+";
-static char NEGATIVE_SPEED[] = "-";
-static char POSITIVE_SPEED[] = "+";
-static bool stick_enabled = false;
-int open_speed = 1;
-#define MOTOR_PAN    0
-#define MOTOR_TILT   1
-#define MOTOR_ROTATE 2
-int mcu_process_message(char *msg, char *reply);
-void joy3d_notify_motor_controller(int motor, int speed)
-{
-   char motor_cmd[16];
-   //char motor_reply[16];
-   char motor_id[4] = "XYZ";
-
-   if (motor == NUM_AXIS && speed != 1)
-      return;
-
-
-   if (motor == NUM_AXIS)
-   {
-      if (stick_enabled)
-      {
-         printf("JOY3D: stick disabled. powering off motors\n");
-         sprintf(motor_cmd, POWER_OFF_CMD);
-         stick_enabled = false;
-         mcu_process_message(motor_cmd, NULL);
-      }
-      else
-      {
-         printf("JOY3D: stick enabled. powering on motors\n");
-         sprintf(motor_cmd, POWER_ON_CMD);
-         mcu_process_message(motor_cmd, NULL);
-         #if 0
-         sprintf(motor_cmd, STEP_CMD, motor_id[MOTOR_TILT], NEGATIVE_SPEED, 1, 50);
-         mcu_process_message(motor_cmd, NULL);
-         while (1)
-         {
-            mcu_process_message(POSITION_CMD, motor_reply);
-            int pos_x, pos_y, pos_z;
-            pos_x = pos_y = pos_z = 0;
-            sscanf(motor_reply, "%03d %03d %03d\n", &pos_x, &pos_y, &pos_z);
-            if (pos_y == -50)
-               break;
-         }
-         sprintf(motor_cmd, STEP_CMD, motor_id[MOTOR_PAN], NEGATIVE_SPEED, 1, 50);
-         mcu_process_message(motor_cmd, NULL);
-         while (1)
-         {
-            mcu_process_message(POSITION_CMD, motor_reply);
-            int pos_x, pos_y, pos_z;
-            pos_x = pos_y = pos_z = 0;
-            sscanf(motor_reply, "%03d %03d %03d\n", &pos_x, &pos_y, &pos_z);
-            if (pos_x == -50)
-               break;
-         }
-         sprintf(motor_cmd, STEP_CMD, motor_id[MOTOR_TILT], NEGATIVE_SPEED, 1, 20);
-         mcu_process_message(motor_cmd, NULL);
-         while (1)
-         {
-            usleep(50 * U_MILLISECOND);
-            mcu_process_message(POSITION_CMD, motor_reply);
-            int pos_x, pos_y, pos_z;
-            pos_x = pos_y = pos_z = 0;
-            sscanf(motor_reply, "%03d %03d %03d\n", &pos_x, &pos_y, &pos_z);
-            if (pos_y == -70)
-               break;
-         }
-         #endif
-         stick_enabled = true;
-      }
-
-   }
-   else if (stick_enabled)
-   {
-      if (speed == 0)
-         sprintf(motor_cmd, SPEED_CMD, motor_id[motor], ZERO_SPEED, 0);
-      else if (speed < 0)
-         sprintf(motor_cmd, SPEED_CMD, motor_id[motor], NEGATIVE_SPEED, -speed);
-      else
-         sprintf(motor_cmd, SPEED_CMD, motor_id[motor], POSITIVE_SPEED, speed);
-      mcu_process_message(motor_cmd, NULL);
-   }
-}
-
 extern void mcu_process_message();
+extern void suimenu_inputmixer_injector(input_event event);
 void joy3d_changed_cb_run(int axis, char pos)
 {
    static int change_count = 0;
+   static char last_position;
 
-   if (change_count < NUM_AXIS)
+   if (change_count <= NUM_AXIS)
    {
       change_count++;
       return;
    }
-   //printf("JOY3D CALLBACK: axis=%d pos = %d\n", axis, pos);
-   //motor_controller->MotorSpeed(axis, pos);
-   joy3d_notify_motor_controller(axis, pos);
+
+   if (suimenu_inf_showing(menu) && axis == JOY3D_AXIS_Y)
+   {
+      if (last_position == 0)
+      {
+         if (pos > last_position)
+         {
+            input_event ev = inputevt_ini_new(INPUTEVT_EVENTID_UP, INPUTSRC_DEVICEID_JOY3D);
+            suimenu_inputmixer_injector(ev);
+            //todo: verify the address disposed is not on the stack
+            inputevt_ini_dispose(ev);
+         }
+         else if (pos < last_position)
+         {
+            input_event ev = inputevt_ini_new(INPUTEVT_EVENTID_DOWN, INPUTSRC_DEVICEID_JOY3D);
+            suimenu_inputmixer_injector(ev);
+            //todo: verify the address disposed is not on the stack
+            inputevt_ini_dispose(ev);
+         }
+      }
+   }
+   else if (suimenu_inf_showing(menu) && axis == JOY3D_BUTTON && pos == 0)
+   {
+      input_event ev = inputevt_ini_new(INPUTEVT_EVENTID_CLICKED, INPUTSRC_DEVICEID_JOY3D);
+      suimenu_inputmixer_injector(ev);
+      //todo: verify the address disposed is not on the stack
+      inputevt_ini_dispose(ev);
+      if (!suimenu_inf_showing(menu))
+         gimbal_opr_enable_input(true);
+   }
+   else if (!suimenu_inf_showing(menu) && axis == JOY3D_BUTTON && pos == 0)
+   {
+      gimbal_opr_enable_input(false);
+      input_event ev = inputevt_ini_new(INPUTEVT_EVENTID_CLICKED, INPUTSRC_DEVICEID_JOY3D);
+      suimenu_inputmixer_injector(ev);
+      //todo: verify the address disposed is not on the stack
+      inputevt_ini_dispose(ev);
+   }
+   else if (!suimenu_inf_showing(menu) && axis != JOY3D_BUTTON)
+   {
+      input_event ev;
+      if (pos < 0)
+         ev = inputevt_ini_new(INPUTEVT_EVENTID_DOWN, INPUTSRC_DEVICEID_JOY3D);
+      else
+         ev = inputevt_ini_new(INPUTEVT_EVENTID_UP, INPUTSRC_DEVICEID_JOY3D);
+      //up/down use same field enumerations
+      inputevt_cfg_field_i(ev, INPUTEVT_FIELDID_UP_AXIS, axis);
+      inputevt_cfg_field_i(ev, INPUTEVT_FIELDID_UP_POWER, pos);
+      gimbal_inputmixer_injector(ev);
+      //todo: verify the address disposed is not on the stack
+      inputevt_ini_dispose(ev);
+   }
+
+   last_position = pos;
 }
 
 void joy3d_changed_cb_test_stick(int axis, char pos)
@@ -334,4 +346,6 @@ int joy3d_test_adc()
    }
    return 0;
 }
+
+
 
