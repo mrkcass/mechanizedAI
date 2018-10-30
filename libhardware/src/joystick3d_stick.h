@@ -8,7 +8,7 @@
 #define JOY3D_AXIS_Y       1
 #define JOY3D_AXIS_Z       2
 #define JOY3D_AXIS_W       3
-#define JOY3D_BUTTON       0
+#define JOY3D_BUTTON       4
 
 #define JOY3D_RANGE 128
 

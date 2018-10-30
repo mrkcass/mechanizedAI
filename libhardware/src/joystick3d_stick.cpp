@@ -142,7 +142,10 @@ int Joystick::run()
             if (debounce[axis] == debounce_threshold)
             {
                debounce[axis]++;
-               changed_cb(axis, current);
+               if (axis == num_axis)
+                  changed_cb(JOY3D_BUTTON, current);
+               else
+                  changed_cb(axis, current);
             }
             else
                debounce[axis]++;
