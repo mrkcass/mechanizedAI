@@ -23,6 +23,8 @@
 
 #define INPUTMIX_MAX_APPLICATIONS      8
 
+struct INPUTMIX_CONTEXT;
+typedef struct INPUTMIX_CONTEXT *inputmix_context;
 typedef int inputmix_sourceid;
 typedef int inputmix_applicationid;
 
