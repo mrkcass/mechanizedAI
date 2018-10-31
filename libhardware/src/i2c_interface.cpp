@@ -287,20 +287,33 @@ int i2c_reg16_write_byte(i2c_context i2c, uint16_t address, uint8_t byte)
 
    i2c_latch_device(i2c);
 
-   uint8_t bytes[2];
-   bytes[0] = address >> 8;
+   uint8_t bytes[3];
+   bytes[0] = (address >> 8) & 0xFF;
    bytes[1] = address & 0xFF;
-   int write_status = mraa_i2c_write(bus, bytes, 2);
+   bytes[2] = byte;
+   int write_status = mraa_i2c_write(bus, bytes, 3);
    if (write_status != MRAA_SUCCESS)
    {
       printf("Error: i2c couldn't write device bytes\n");
    }
 
-   write_status = mraa_i2c_write_byte(bus, byte);
-   if (write_status != MRAA_SUCCESS)
-   {
-      printf("Error: i2c couldn't write device bytes\n");
-   }
+   // int write_status = mraa_i2c_write_byte(bus, bytes[0]);
+   // if (write_status != MRAA_SUCCESS)
+   // {
+   //    printf("Error: i2c couldn't write device bytes\n");
+   // }
+
+   // write_status = mraa_i2c_write(bus, bytes, 3);
+   // if (write_status != MRAA_SUCCESS)
+   // {
+   //    printf("Error: i2c couldn't write device bytes\n");
+   // }
+
+   // write_status = mraa_i2c_write_byte(bus, byte);
+   // if (write_status != MRAA_SUCCESS)
+   // {
+   //    printf("Error: i2c couldn't write device bytes\n");
+   // }
 
    return write_status;
 }
