@@ -165,7 +165,7 @@ void vl53l1x_info(vl53l1x_context ctx)
    // i2c_dev_write_byte(ctx->i2c, 0x1);
    //somax_sleep(U_MILLISECOND * 2000);
 
-   i2c_reg16_write_byte(ctx->i2c, 0x00E0, 0x02);
+   //i2c_reg16_write_byte(ctx->i2c, 0x00E0, 0x02);
 
    int val;
 
@@ -190,6 +190,14 @@ void vl53l1x_info(vl53l1x_context ctx)
       printf("   TypeID:            0x%02X\n", revisionid);
    else
       printf("   TypeID:            0x%02X (Invalid) \n", revisionid);
+
+   val = i2c_reg16_write_byte(ctx->i2c, 0x0000, 0x00);
+   somax_sleep(U_MILLISECOND);
+   val = i2c_reg16_write_byte(ctx->i2c, 0x0000, 0x01);
+   //printf("   0x0000  Soft reset:        0x%02X\n", val);
+
+   val = i2c_reg16_read_byte(ctx->i2c, 0x0000);
+   printf("   0x0000  Soft reset:        0x%02X\n", val);
 
    val = i2c_reg16_read_byte(ctx->i2c, 0x0026);
    printf("   0x0026  Debug mode:        0x%02X\n", val);
@@ -222,7 +230,7 @@ void vl53l1x_info(vl53l1x_context ctx)
    printf("   0x0064  Range sigma:       0x%04X\n", val);
 
    val = i2c_reg16_read_byte(ctx->i2c, 0x0077);
-   printf("   0x0077  System speed:      0x%02X\n", val);
+   printf("   0x0077  Firmware pause:    0x%02X\n", val);
 
    val = i2c_reg16_read_byte(ctx->i2c, 0x00DB);
    printf("   0x00DB  Cold boot status:  0x%02X\n", val);
@@ -366,15 +374,11 @@ static void vl53l1x_run_update_framedata_observer(int context_id)
 {
    vl53l1x_context ctx = &contexts[context_id];
 
-   printf("debug 1\n");
+   if (!ctx->driver->newDataReady() == false)
+      ctx->driver->startMeasurement();
 
-   ctx->driver->startMeasurement();
-
-   printf("debug 2\n");
    while(ctx->driver->newDataReady() == false)
       somax_sleep(5 * U_MILLISECOND);
-
-   printf("debug 3\n");
 
    ctx->frame_buffer[0] = ctx->driver->getDistance();
 

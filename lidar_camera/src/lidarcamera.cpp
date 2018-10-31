@@ -193,6 +193,7 @@ static int lidarcam_diag_framedata_toconsole(lidarcam_context lidarcam)
 static void lidarcam_diag_toconsole_framedata_callbk(vl53l1x_context ctx, vl53l1x_callback_id callbk_id, vl53l1x_framedata_buffer return_buffer)
 {
    printf("Distance = %4.0f\r", return_buffer[0]);
+   fflush(stdout);
    //todo: convert this to call the run callback so that the callback functionality is also tested.
    // static unsigned long frame_count;
 
