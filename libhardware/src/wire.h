@@ -19,6 +19,7 @@ class Wire
    bool connectDigital(int edisonPin, int direction, int mode);
    void write(int level);
    int read();
+   void remap(int map_to);
 
    int pin;
    int direction;

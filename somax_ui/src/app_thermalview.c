@@ -25,24 +25,30 @@
 #include "videocomposer.h"
 #include "thermalcamera.h"
 #include "somaxui_menu.h"
+#include "gimbal.h"
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //CONSTANTS
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
+#define THRMVW_QUALITY_HIGH   1
+#define THRMVW_QUALITY_MED    0
+#define THRMVW_QUALITY_LOW    2
+#define THRMVW_QUALITY_FAST   3
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 //FUNCTION DECLARATIONS
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-vidcomp_context vidcomposer;
+static vidcomp_context vidcomposer;
 static void thermalview_update_observer(vidcomp_context ctx);
 static void thermalview_render_observer(vidcomp_context ctx, pixbuf_context frame_buffer);
 static bool thermalview_server_run();
 static void thermalview_init_menu(suimenu_context sui_menu);
-static void thermalview_menu_observer(suimenu_menuid menu_id, suimenu_itemid item_id);
+static void thermalview_menu_state_observer(suimenu_menuid menu_id, suimenu_itemid state_id);
+static void thermalview_menu_item_observer(suimenu_menuid menu_id, suimenu_itemid state_id);
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -67,12 +73,27 @@ static bool thermcam_displaying_frame = false;
 static thermcam_framedata_buffer current_framedata;
 static bool headless = false;
 static bool thrmvw_show;
+static bool thrmvw_initialized;
+static bool thrmvw_gimbal_enabled;
+static int thrmvw_quality;
 
+static suimenu_context thrmvw_menu_ctx;
 static char thrmvw_menu_name[] = "thermal view";
-static char thrmvw_menuitem_units[] = "celsius/faren";
-static char thrmvw_menuitem_snapshot[] = "take snapshot";
-static suimenu_menuid thrmvw_menuid_units;
-static suimenu_menuid thrmvw_menuid_snapshot;
+static const char thrmvw_menuitem_units[]       = "celsius/faren";
+static const char thrmvw_menuitem_snapshot[]    = "take snapshot";
+static const char thrmvw_menuitem_gimbal_on[]   = "gimbal on";
+static const char thrmvw_menuitem_gimbal_off[]  = "gimbal off";
+
+static suimenu_menuid thrmvw_menuid;
+static suimenu_itemid thrmvw_itemid_units;
+static suimenu_itemid thrmvw_itemid_snapshot;
+static suimenu_itemid thrmvw_itemid_gimbal;
+
+static suimenu_menuid thrmvw_menuid_quality;
+static suimenu_itemid thrmvw_itemid_quality_fst;
+static suimenu_itemid thrmvw_itemid_quality_low;
+static suimenu_itemid thrmvw_itemid_quality_med;
+static suimenu_itemid thrmvw_itemid_quality_hi;
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -83,6 +104,13 @@ int thermalview_init(int argc, char *argv[], suimenu_context main_menu, vidcomp_
 {
    int return_code = 0;
 
+   if (thrmvw_initialized)
+      return 0;
+
+   printf("initializing thermalview application\n");
+
+   thrmvw_menu_ctx = main_menu;
+
    vidcomposer = video_composer;
    vidcomp_add_update_observer(vidcomposer, thermalview_update_observer);
    vidcomp_add_render_observer(vidcomposer, thermalview_render_observer);
@@ -91,6 +119,8 @@ int thermalview_init(int argc, char *argv[], suimenu_context main_menu, vidcomp_
 
    if (!return_code && !thermalview_server_run())
       return_code = 1;
+   else
+      thrmvw_initialized = true;
 
    return return_code;
 }
@@ -108,28 +138,118 @@ void thermalview_show(bool show)
 //------------------------------------------------------------------------------
 static void thermalview_init_menu(suimenu_context menu_ctx)
 {
-   suimenu_menuid menuid;
+   thrmvw_menuid_quality = suimenu_cfg_addmenu(menu_ctx, "quality >", thermalview_menu_state_observer);
+   thrmvw_itemid_quality_fst = suimenu_cfg_additem(menu_ctx, thrmvw_menuid_quality, "fast", SUIMENU_MENUID_NULL, thermalview_menu_item_observer);
+   thrmvw_itemid_quality_low = suimenu_cfg_additem(menu_ctx, thrmvw_menuid_quality, "low", SUIMENU_MENUID_NULL, thermalview_menu_item_observer);
+   thrmvw_itemid_quality_med = suimenu_cfg_additem(menu_ctx, thrmvw_menuid_quality, "*medium", SUIMENU_MENUID_NULL, thermalview_menu_item_observer);
+   thrmvw_itemid_quality_hi  = suimenu_cfg_additem(menu_ctx, thrmvw_menuid_quality, "high", SUIMENU_MENUID_NULL, thermalview_menu_item_observer);
 
    //application menu - will be displayed when the select button is pressed.
-   menuid = suimenu_cfg_addmenu(menu_ctx, thrmvw_menu_name);
-   thrmvw_menuid_units = suimenu_cfg_additem(menu_ctx, menuid, thrmvw_menuitem_units, SUIMENU_MENUID_NULL, thermalview_menu_observer);
-   thrmvw_menuid_snapshot = suimenu_cfg_additem(menu_ctx, menuid, thrmvw_menuitem_snapshot, SUIMENU_MENUID_NULL, thermalview_menu_observer);
+   thrmvw_menuid = suimenu_cfg_addmenu(menu_ctx, thrmvw_menu_name, thermalview_menu_state_observer);
+   thrmvw_itemid_units = suimenu_cfg_additem(menu_ctx, thrmvw_menuid, thrmvw_menuitem_units, SUIMENU_MENUID_NULL, thermalview_menu_item_observer);
+   thrmvw_itemid_snapshot = suimenu_cfg_additem(menu_ctx, thrmvw_menuid, thrmvw_menuitem_snapshot, SUIMENU_MENUID_NULL, thermalview_menu_item_observer);
+   thrmvw_itemid_gimbal = suimenu_cfg_additem(menu_ctx, thrmvw_menuid, thrmvw_menuitem_gimbal_on, SUIMENU_MENUID_NULL, thermalview_menu_item_observer);
+   suimenu_cfg_additem(menu_ctx, thrmvw_menuid, "quality", thrmvw_menuid_quality, NULL);
+
 
    //add thermal view to the application menu
-   suimenu_cfg_additem(menu_ctx, SUIMENU_MENUID_APPLICATION, thrmvw_menu_name, menuid, thermalview_menu_observer);
+   suimenu_cfg_additem(menu_ctx, SUIMENU_MENUID_APPLICATION, thrmvw_menu_name, thrmvw_menuid, thermalview_menu_item_observer);
 }
 
-static void thermalview_menu_observer(suimenu_menuid menu_id, suimenu_itemid item_id)
+static void thermalview_menu_state_observer(suimenu_menuid menu_id, suimenu_stateid state_id)
 {
    //start the camera and send data to the oled
-   if (menu_id == SUIMENU_MENUID_APPLICATION && item_id == SUIMENU_MENUID_APPLICATION)
+   if (menu_id == SUIMENU_MENUID_APPLICATION && state_id == SUIMENU_STATEID_START)
    {
-
+      printf("starting thermalview application\n");
+      thermalview_show(true);
    }
 
    //stop the camera and display update
-   if (menu_id == SUIMENU_MENUID_APPLICATION && item_id == SUIMENU_MENUID_EXIT)
+   if (menu_id == SUIMENU_MENUID_APPLICATION && state_id == SUIMENU_STATEID_STOP)
    {
+      printf("stopping thermalview application\n");
+      if (thrmvw_gimbal_enabled)
+      {
+         gimbal_opr_enable_motors(false);
+         gimbal_opr_enable_input(false);
+         suimenu_cfg_itemtext(thrmvw_menu_ctx, thrmvw_menuid, thrmvw_itemid_gimbal, thrmvw_menuitem_gimbal_on);
+      }
+      thermalview_show(false);
+   }
+
+   //displaying the menu, save band width by stopping thrmvw_display
+   if (menu_id == SUIMENU_MENUID_APPLICATION && state_id == SUIMENU_STATEID_MENU_ON)
+   {
+      printf("thermalview application - menu on\n");
+      thermalview_show(false);
+   }
+   //displaying the menu, save band width by stopping thrmvw_display
+   if (menu_id == SUIMENU_MENUID_APPLICATION && state_id == SUIMENU_STATEID_MENU_OFF)
+   {
+      printf("thermalview application - menu off\n");
+      thermalview_show(true);
+   }
+}
+
+static void thermalview_menu_item_observer(suimenu_menuid menu_id, suimenu_itemid item_id)
+{
+   //enable / disable gimbal
+   if (menu_id == thrmvw_menuid && item_id == thrmvw_itemid_gimbal)
+   {
+      if (!thrmvw_gimbal_enabled)
+      {
+         printf("thermalview application enable gimbal\n");
+         thrmvw_gimbal_enabled = true;
+         gimbal_opr_enable_motors(true);
+         gimbal_opr_enable_input(true);
+         suimenu_cfg_itemtext(thrmvw_menu_ctx, thrmvw_menuid, thrmvw_itemid_gimbal, thrmvw_menuitem_gimbal_off);
+      }
+      else
+      {
+         printf("thermalview application disable gimbal\n");
+         thrmvw_gimbal_enabled = false;
+         gimbal_opr_enable_motors(false);
+         gimbal_opr_enable_input(false);
+         suimenu_cfg_itemtext(thrmvw_menu_ctx, thrmvw_menuid, thrmvw_itemid_gimbal, thrmvw_menuitem_gimbal_on);
+      }
+   }
+
+   if (menu_id == thrmvw_menuid_quality)
+   {
+      if (thrmvw_quality == THRMVW_QUALITY_HIGH)
+         suimenu_cfg_itemtext(thrmvw_menu_ctx, thrmvw_menuid_quality, thrmvw_itemid_quality_hi, "high");
+      else if (thrmvw_quality == THRMVW_QUALITY_MED)
+         suimenu_cfg_itemtext(thrmvw_menu_ctx, thrmvw_menuid_quality, thrmvw_itemid_quality_med, "medium");
+      else if (thrmvw_quality == THRMVW_QUALITY_LOW)
+         suimenu_cfg_itemtext(thrmvw_menu_ctx, thrmvw_menuid_quality, thrmvw_itemid_quality_low, "low");
+      else if (thrmvw_quality == THRMVW_QUALITY_FAST)
+         suimenu_cfg_itemtext(thrmvw_menu_ctx, thrmvw_menuid_quality, thrmvw_itemid_quality_low, "fast");
+
+      if (item_id == thrmvw_itemid_quality_hi)
+      {
+         printf("got hi quality click\n");
+         suimenu_cfg_itemtext(thrmvw_menu_ctx, thrmvw_menuid_quality, thrmvw_itemid_quality_hi, "*high");
+         thrmvw_quality = THRMVW_QUALITY_HIGH;
+      }
+      else if (item_id == thrmvw_itemid_quality_med)
+      {
+         printf("got med quality click\n");
+         suimenu_cfg_itemtext(thrmvw_menu_ctx, thrmvw_menuid_quality, thrmvw_itemid_quality_med, "*medium");
+         thrmvw_quality = THRMVW_QUALITY_MED;
+      }
+      else if (item_id == thrmvw_itemid_quality_low)
+      {
+         printf("got low quality click\n");
+         suimenu_cfg_itemtext(thrmvw_menu_ctx, thrmvw_menuid_quality, thrmvw_itemid_quality_low, "*low");
+         thrmvw_quality = THRMVW_QUALITY_LOW;
+      }
+      else if (item_id == thrmvw_itemid_quality_fst)
+      {
+         printf("got fast quality click\n");
+         suimenu_cfg_itemtext(thrmvw_menu_ctx, thrmvw_menuid_quality, thrmvw_itemid_quality_fst, "*fast");
+         thrmvw_quality = THRMVW_QUALITY_FAST;
+      }
    }
 }
 
@@ -211,25 +331,24 @@ void thermalview_update_observer(vidcomp_context ctx)
       //float min_temp = 30.0;
       float temp_cutoff = avg_temp;
       if (min_temp / max_temp > .90)
-         temp_cutoff = max_temp+1;
+         temp_cutoff = max_temp + 1;
       if (temp >= temp_cutoff)
       {
          float scalar = ((temp - temp_cutoff) / (max_temp - temp_cutoff));
-         b = 6.0 * (1.0 - scalar);
-         r = 15.0 + (10.0 * scalar);
+         b = 8.0 * (1.0 - scalar);
+         r = 15.0 + ((max_temp - avg_temp) * scalar);
       }
       else
       {
          float scalar = ((temp - min_temp) / (temp_cutoff - min_temp));
-         r = 6.0 * scalar;
-         b = 15.0 + (10.0 * scalar);
+         r = 8.0 * scalar;
+         b = 15.0; // + ((avg_temp - min_temp) * scalar);
       }
 
       thermcam_opencv_buff->imageData[(i * 3)] = b;
       thermcam_opencv_buff->imageData[(i * 3) + 1] = r;
       thermcam_opencv_buff->imageData[(i * 3) + 2] = g;
    }
-
 
    cvTranspose(thermcam_opencv_buff, thermcam_opencv_buff);
    if (headless)
@@ -261,7 +380,7 @@ void thermalview_thermcam_observer(thermcam_context ctx, thermcam_observer_id ob
 
 static void *thermalview_server(void *arg)
 {
-   thermcam = thermcam_open(THERMCAMID_GIMBAL);
+   thermcam = thermcam_open(THERMCAMID_GIMBAL_LEFT);
 
    thermcam_cfg_output_units(thermcam, THERMCAM_OUTPUTUNITS_FARENHEIT);
    thermcam_cfg_observer_framedata(thermcam, 0, thermalview_thermcam_observer, &thermcam_framebuffer);

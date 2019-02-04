@@ -1,5 +1,5 @@
-#ifndef __gimbal_h__
-#define __gimbal_h__
+#ifndef __bluetooth_stick_h__
+#define __bluetooth_stick_h__
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 // author: mark cass
@@ -14,13 +14,18 @@
 //------------------------------------------------------------------------------
 
 #include "somax.h"
-#include "inputevent.h"
 
-void gimbal_ini_open();
-void gimbal_ini_close();
-void gimbal_opr_enable_motors(bool enable);
-void gimbal_opr_enable_input(bool enable);
-void gimbal_inputmixer_injector(input_event event);
-void gimbal_inf_step_location(int * x, int * y, int * z);
+#define BLUEJOY_MAX_AXIS 4
+#define BLUEJOY_AXIS_X       0
+#define BLUEJOY_AXIS_Y       1
+#define BLUEJOY_AXIS_Z       2
+#define BLUEJOY_AXIS_W       3
+#define BLUEJOY_BUTTON       4
+
+typedef void (*bluejoy_input_observer)(int axis, char pos);
+
+
+int bluetoothjoy_connect(bluejoy_input_observer observer, int num_power_levels);
+int bluetoothjoy_run();
 
 #endif

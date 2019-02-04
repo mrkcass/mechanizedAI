@@ -28,6 +28,8 @@ struct I2C_CONTEXT;
 
 typedef I2C_CONTEXT* i2c_context;
 
+bool i2c_detect_device(int bus, int device_address);
+
 i2c_context i2c_open(int i2c_bus_num, int device_address);
 void i2c_close (i2c_context i2c);
 
@@ -50,6 +52,12 @@ int i2c_reg_write_bits(i2c_context i2c, uint8_t register_id, uint8_t bit0, uint8
 int i2c_reg_write_word(i2c_context i2c, uint8_t register_id, uint16_t word);
 
 int i2c_somax_bus_id_to_mainboard_id(int somax_i2c_busid);
+
+int i2c_reg16_read_byte(i2c_context i2c, uint16_t address);
+int i2c_reg16_read_word(i2c_context i2c, uint16_t address);
+int i2c_reg16_write_byte(i2c_context i2c, uint16_t address, uint8_t byte);
+int i2c_reg16_write_2bytes(i2c_context i2c, uint16_t address, uint8_t byte0, uint8_t byte1);
+int i2c_reg16_write_bytes(i2c_context i2c, uint16_t address, uint8_t *bytes, int num_bytes);
 
 
 void debug(int argc, char ** argv);

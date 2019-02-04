@@ -42,7 +42,8 @@ static void gimbalhold_update_observer(vidcomp_context ctx);
 static void gimbalhold_render_observer(vidcomp_context ctx, pixbuf_context frame_buffer);
 static bool gimbalhold_server_run();
 static void gimbalhold_init_menu(suimenu_context sui_menu);
-static void gimbalhold_menu_observer(suimenu_menuid menu_id, suimenu_itemid item_id);
+static void gimbalhold_menu_state_observer(suimenu_menuid menu_id, suimenu_itemid item_id);
+static void gimbalhold_menu_item_observer(suimenu_menuid menu_id, suimenu_itemid item_id);
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -58,9 +59,9 @@ static void gimbalhold_menu_observer(suimenu_menuid menu_id, suimenu_itemid item
 
 static bool gimbalhold_showing;
 
-static char gimbalhold_menu_name[] = "gimbal hold";
-static char gimbalhold_menuitem_target[] = "target";
-static char gimbalhold_menuitem_recvideo[] = "rec video";
+static const char gimbalhold_menu_name[] = "gimbal hold";
+static const char gimbalhold_menuitem_target[] = "target";
+static const char gimbalhold_menuitem_recvideo[] = "rec video";
 static suimenu_menuid gimbalhold_menuid_target;
 static suimenu_menuid gimbalhold_menuid_recvideo;
 
@@ -101,26 +102,29 @@ static void gimbalhold_init_menu(suimenu_context menu_ctx)
    suimenu_menuid menuid;
 
    //application menu - will be displayed when the select button is pressed.
-   menuid = suimenu_cfg_addmenu(menu_ctx, gimbalhold_menu_name);
-   gimbalhold_menuid_target = suimenu_cfg_additem(menu_ctx, menuid, gimbalhold_menuitem_target, SUIMENU_MENUID_NULL, gimbalhold_menu_observer);
-   gimbalhold_menuid_recvideo = suimenu_cfg_additem(menu_ctx, menuid, gimbalhold_menuitem_recvideo, SUIMENU_MENUID_NULL, gimbalhold_menu_observer);
+   menuid = suimenu_cfg_addmenu(menu_ctx, gimbalhold_menu_name, gimbalhold_menu_state_observer);
+   gimbalhold_menuid_target = suimenu_cfg_additem(menu_ctx, menuid, gimbalhold_menuitem_target, SUIMENU_MENUID_NULL, gimbalhold_menu_item_observer);
+   gimbalhold_menuid_recvideo = suimenu_cfg_additem(menu_ctx, menuid, gimbalhold_menuitem_recvideo, SUIMENU_MENUID_NULL, gimbalhold_menu_item_observer);
 
    //add thermal view to the application menu
-   suimenu_cfg_additem(menu_ctx, SUIMENU_MENUID_APPLICATION, gimbalhold_menu_name, menuid, gimbalhold_menu_observer);
+   suimenu_cfg_additem(menu_ctx, SUIMENU_MENUID_APPLICATION, gimbalhold_menu_name, menuid, gimbalhold_menu_item_observer);
 }
 
-static void gimbalhold_menu_observer(suimenu_menuid menu_id, suimenu_itemid item_id)
+static void gimbalhold_menu_state_observer(suimenu_menuid menu_id, suimenu_itemid item_id)
 {
    //start the camera and send data to the oled
-   if (menu_id == SUIMENU_MENUID_APPLICATION && item_id == SUIMENU_MENUID_APPLICATION)
+   if (menu_id == SUIMENU_MENUID_APPLICATION && item_id == SUIMENU_STATEID_START)
    {
-
    }
 
    //stop the camera and display update
-   if (menu_id == SUIMENU_MENUID_APPLICATION && item_id == SUIMENU_MENUID_EXIT)
+   if (menu_id == SUIMENU_MENUID_APPLICATION && item_id == SUIMENU_STATEID_STOP)
    {
    }
+}
+
+static void gimbalhold_menu_item_observer(suimenu_menuid menu_id, suimenu_itemid item_id)
+{
 }
 
 void gimbalhold_update_observer(vidcomp_context ctx)

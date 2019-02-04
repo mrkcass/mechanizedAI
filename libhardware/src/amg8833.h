@@ -43,8 +43,9 @@
 #define AMG8833_CURRENT_STANDBY_MILLIAMP           0.8
 #define AMG8833_CURRENT_SLEEP_MILLIAMP             0.2
 
-#define AMG8833_NUM_DEVICES   1
+#define AMG8833_NUM_DEVICES   2
 #define AMG8833_DEVICEID_1    0
+#define AMG8833_DEVICEID_2    1
 
 #define AMG8833_ARRAY_WIDTH                  8
 #define AMG8833_ARRAY_HEIGHT                 8

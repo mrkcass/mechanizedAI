@@ -46,7 +46,7 @@ static thermcam_context thermcamctl_camt;
 //PRIVATE FUNCTION DECLARATIONS
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-static int thermcamctl_open_camt();
+static int thermcamctl_open_camt(thermcam_id camera_id);
 static void thermcamctl_close_camt();
 static void thermcamctl_display_help();
 static void thermcamctl_info();
@@ -75,7 +75,10 @@ int main(int argc, char *argv[])
 
    libhardware_init();
 
-   return_code = thermcamctl_open_camt();
+   if (somax_commandline_has_option(argc, argv, "right"))
+      return_code = thermcamctl_open_camt(THERMCAMID_GIMBAL_RIGHT);
+   else
+      return_code = thermcamctl_open_camt(THERMCAMID_GIMBAL_LEFT);
 
    if (!return_code && somax_commandline_has_option(argc, argv, "info"))
    {
@@ -113,6 +116,10 @@ void thermcamctl_display_help()
    printf("  Version: %s\n", SOMAX_VERSION);
    printf("\n");
    printf("  commands:\n");
+   printf("    right\n");
+   printf("       Select right gimbal thermal camera.\n");
+   printf("    left\n");
+   printf("       Select left gimbal thermal camera. (default)\n");
    printf("    info\n");
    printf("       Read and print thermal camera device information\n");
    printf("    test-pixeldata\n");
@@ -128,9 +135,9 @@ void thermcamctl_display_help()
 //PRIVATE FUNCTIONS
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-static int thermcamctl_open_camt()
+static int thermcamctl_open_camt(thermcam_id camera_id)
 {
-   thermcamctl_camt = thermcam_open(THERMCAMID_GIMBAL);
+   thermcamctl_camt = thermcam_open(camera_id);
 
    if (thermcamctl_camt == THERMCAM_CONTEXT_NULL)
    {

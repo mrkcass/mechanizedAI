@@ -46,8 +46,8 @@ struct LIDARCAM_CONTEXT
 //todo: this can be extended to map other things to devices other than just
 //names. for example open,close and info functions functions .
 static const char lidarcam_names[][32] =
-    {"LIDARCAM-NULL", "LIDARCAM-GIMBAL[VL53L1X]"};
-static int lidarcam_device_id_map[] = {0, VL53L1X_DEVICEID_1};
+   {"LIDARCAM-NULL", "LIDARCAM-GIMBAL[VL53L1X]"};
+static int lidarcam_device_id_map[] = {0, VL53L1X_DEVICEID_LEFT, VL53L1X_DEVICEID_RIGHT};
 
 static int contextlist_used;
 static LIDARCAM_CONTEXT context_list[LIDARCAM_MAX_CONTEXTS];

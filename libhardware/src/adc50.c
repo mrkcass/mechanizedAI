@@ -1,3 +1,14 @@
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// author: mark cass
+// project: somax personal AI
+// project url: https://mechanizedai.com
+// license: open source and free for all uses without encumbrance.
+//
+// FILE: gpio_interface.h
+// DESCRIPTION: Interface for general purpose input output communication.
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 #include <math.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -108,11 +119,11 @@ int adc50_init(int adc50_input)
 
    if (configbits != -1)
    {
-     adc50_uppack_configbits(&adc50_config_register, configbits);
-     if (adc50_input == ADC50_INPUT_JOY3D)
-        adc50_init_onboardstick1x3D();
-     int configbits_after = adc50_read_config_register();
-     adc50_dump_config(configbits_after);
+      adc50_uppack_configbits(&adc50_config_register, configbits);
+      if (adc50_input == ADC50_INPUT_JOY3D)
+         adc50_init_onboardstick1x3D();
+      int configbits_after = adc50_read_config_register();
+      adc50_dump_config(configbits_after);
    }
 
    return 0;
@@ -168,13 +179,13 @@ int adc50_testsample()
    printf("Sampling:\n");
    while (1)
    {
-     int a0 = adc50_sample_single_end(0);
-     int a1 = adc50_sample_single_end(1);
-     int a2 = adc50_sample_single_end(2);
+      int a0 = adc50_sample_single_end(0);
+      int a1 = adc50_sample_single_end(1);
+      int a2 = adc50_sample_single_end(2);
 
-     printf("   CHANNEL 0: %6d   CHANNEL 1: %6d  CHANNEL 2: %6d\r", a0, a1, a2);
-     fflush(stdout);
-     usleep(1000000/16);
+      printf("   CHANNEL 0: %6d   CHANNEL 1: %6d  CHANNEL 2: %6d\r", a0, a1, a2);
+      fflush(stdout);
+      usleep(1000000/16);
    }
    return 0;
 }

@@ -12,8 +12,9 @@
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-#define LIDARCAM_NUM_CAMERAS  1
-#define LIDARCAMID_GIMBAL     1
+#define LIDARCAM_NUM_CAMERAS  2
+#define LIDARCAMID_LEFT       1
+#define LIDARCAMID_RIGHT      2
 
 #define LIDARCAM_CONTEXT_NULL 0
 

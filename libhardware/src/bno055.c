@@ -6,7 +6,7 @@
 
 
 #define BNO_CAMD_I2C_BUS        1
-#define BNO_CAMD_I2C_ADDRESS    0x29
+#define BNO_CAMD_I2C_ADDRESS    0x28
 #define BNO_FRAME_I2C_BUS       0
 #define BNO_FRAME_I2C_ADDRESS   0x28
 
@@ -263,11 +263,11 @@ ahrs_context bno055_open(ahrs_id id)
 
    ctx->i2c = i2c_open(i2c_busdevice[id*2], i2c_busdevice[(id*2)+1]);
    ctx->axis_map = BNO_MAPAXIS_X << BNO_REG_AXISMAP_X_SHIFT |
-                   BNO_MAPAXIS_Y << BNO_REG_AXISMAP_Y_SHIFT |
-                   BNO_MAPAXIS_Z << BNO_REG_AXISMAP_Z_SHIFT;
+                  BNO_MAPAXIS_Y << BNO_REG_AXISMAP_Y_SHIFT |
+                  BNO_MAPAXIS_Z << BNO_REG_AXISMAP_Z_SHIFT;
    ctx->axis_sign = BNO_SIGN_POSITIVE << BNO_REG_AXISSIGN_X_SHIFT |
-                    BNO_SIGN_POSITIVE << BNO_REG_AXISSIGN_Y_SHIFT |
-                    BNO_SIGN_POSITIVE << BNO_REG_AXISSIGN_Z_SHIFT;
+                  BNO_SIGN_POSITIVE << BNO_REG_AXISSIGN_Y_SHIFT |
+                  BNO_SIGN_POSITIVE << BNO_REG_AXISSIGN_Z_SHIFT;
    return (ahrs_context)ctx;
 }
 
@@ -437,15 +437,15 @@ void bno055_info(ahrs_context ahrs)
 
    int accel_id = i2c_reg_read_byte(ctx->i2c, BNO_REG_ACCEL_REV_ID);
    printf("  Accelerometer Rev: 0x%X%s\n", accel_id,
-          accel_id == BNO_ACC_ID ? "" : "\t\tWARNING -- IDMISMATCH");
+         accel_id == BNO_ACC_ID ? "" : "\t\tWARNING -- IDMISMATCH");
 
    int mag_id = i2c_reg_read_byte(ctx->i2c, BNO_REG_MAG_REV_ID);
    printf("  Magnetometer Rev : 0x%X%s\n", mag_id,
-          mag_id == BNO_MAG_ID ? "" : "\t\tWARNING -- IDMISMATCH");
+         mag_id == BNO_MAG_ID ? "" : "\t\tWARNING -- IDMISMATCH");
 
    int gyro_id = i2c_reg_read_byte(ctx->i2c, BNO_REG_GYRO_REV_ID);
    printf("  Gyroscope Rev    : 0x%X%s\n", gyro_id,
-          gyro_id == BNO_GYR_ID ? "" : "\t\tWARNING -- IDMISMATCH");
+         gyro_id == BNO_GYR_ID ? "" : "\t\tWARNING -- IDMISMATCH");
 
    int sw_rev_lsb = i2c_reg_read_byte(ctx->i2c, BNO_REG_SW_REV_ID_LSB);
    int sw_rev_msb = i2c_reg_read_byte(ctx->i2c, BNO_REG_SW_REV_ID_MSB);

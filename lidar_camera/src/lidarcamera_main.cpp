@@ -124,7 +124,7 @@ void lidarcamctl_display_help()
 //------------------------------------------------------------------------------
 static int lidarcamctl_open_cam()
 {
-   lidarcam = lidarcam_open(LIDARCAMID_GIMBAL);
+   lidarcam = lidarcam_open(LIDARCAMID_LEFT);
 
    if (lidarcam == LIDARCAM_CONTEXT_NULL)
    {

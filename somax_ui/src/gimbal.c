@@ -57,12 +57,15 @@ extern int mcu_process_message(char *msg, char *reply);
 //------------------------------------------------------------------------------
 static bool gimbal_input_enabled;
 static bool gimbal_motors_enabled;
-static char POWER_ON_CMD[] = "poweron       \n";
-static char POWER_OFF_CMD[] = "poweroff      \n";
-static char SPEED_CMD[] = "speed%c%s%02d      \n";
+static char POWER_ON_CMD[]    = "poweron       \n";
+static char POWER_OFF_CMD[]   = "poweroff      \n";
+static char SPEED_CMD[]       = "speed%c%s%02d      \n";
+static char STEP_POSITION[]   = "position      \n";
+
 static char ZERO_SPEED[] = "+";
 static char NEGATIVE_SPEED[] = "-";
 static char POSITIVE_SPEED[] = "+";
+
 
 
 //------------------------------------------------------------------------------
@@ -77,6 +80,16 @@ void gimbal_ini_open()
 
 void gimbal_ini_close()
 {
+}
+
+void gimbal_inf_step_location(int * x, int * y, int * z)
+{
+   char motor_cmd[16];
+   char motor_reply[16];
+   
+   sprintf(motor_cmd, STEP_POSITION);
+   mcu_process_message(motor_cmd, motor_reply);
+   sscanf(motor_reply, "%03d %03d %03d\n", x, y, z);
 }
 
 void gimbal_opr_enable_motors(bool enable)
@@ -117,14 +130,38 @@ void gimbal_inputmixer_injector(input_event event)
 //------------------------------------------------------------------------------
 static void gimbal_inputmixer_observer(input_event event)
 {
+   static int last_motor, last_speed;
+
    if (!gimbal_input_enabled)
       return;
 
    if (inputevt_inf_id(event) == INPUTEVT_EVENTID_UP)
    {
+      printf("motor up msg\n");
+      
       int motor = inputevt_inf_field_i(event, INPUTEVT_FIELDID_UP_AXIS);
       int speed = inputevt_inf_field_i(event, INPUTEVT_FIELDID_UP_SPEED);
+
+      if (last_motor == motor && last_speed == speed)
+         return;
+
       gimbal_notify_motor_controller(motor, speed);
+      last_motor = motor;
+      last_speed = speed;
+   }
+   else if (inputevt_inf_id(event) == INPUTEVT_EVENTID_DOWN)
+   {
+      printf("motor down msg\n");
+   
+      int motor = inputevt_inf_field_i(event, INPUTEVT_FIELDID_DOWN_AXIS);
+      int speed = inputevt_inf_field_i(event, INPUTEVT_FIELDID_DOWN_SPEED);
+
+      if (last_motor == motor && last_speed == speed)
+         return;
+
+      gimbal_notify_motor_controller(motor, speed);
+      last_motor = motor;
+      last_speed = speed;
    }
 }
 

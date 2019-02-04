@@ -6,11 +6,11 @@
 
 struct AHRS_CONTEXT
 {
-    unsigned char this_is_not_populated_on_purpose;
+   unsigned char this_is_not_populated_on_purpose;
 };
 
 static const char ahrs_names[][32] =
-    {"AHRS-NULL", "AHRS-FRAME[BNO055]", "AHRS-CAMD[BNO055]"};
+   {"AHRS-NULL", "AHRS-FRAME[BNO055]", "AHRS-CAMD[BNO055]"};
 
 static AHRS_EULER_CALLBACK outputdata_euler_callbk;
 static AHRS_QUATERNION_CALLBACK outputdata_quaternion_callbk;

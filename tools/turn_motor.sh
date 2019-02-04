@@ -91,8 +91,8 @@ motor_r()
 
    local in1="182"
    local in2="114"
-   local in3="129"
-   local in4="131"
+   local in3="79"
+   local in4="15"
 
 
    turn_motor $in1 $in2 $in3 $in4 $phase

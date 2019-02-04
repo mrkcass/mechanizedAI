@@ -38,11 +38,7 @@
 
 #include "SparkFun_VL53L1X_Arduino_Library.h"
 #include "stdio.h"
-
-extern int i2c_reg16_write_byte(i2c_context i2c, uint16_t address, uint8_t byte);
-int i2c_reg16_write_bytes(i2c_context i2c, uint16_t address, uint8_t *bytes, int num_bytes);
-extern int i2c_reg16_read_byte(i2c_context i2c, uint16_t address);
-extern int i2c_reg16_read_word(i2c_context i2c, uint16_t address);
+#include "i2c_interface.h"
 
 //This is 135 bytes to be written every time to the VL53L1X to initiate a measurement
 //0x29 is written to memory location 0x01, which is the register for the I2C address which
@@ -98,20 +94,20 @@ boolean VL53L1X::begin(i2c_context i2c_bus)
       return (false);
    }
 
-   softReset();
+   //softReset();
 
    //Polls the bit 0 of the FIRMWARE__SYSTEM_STATUS register to see if the firmware is ready
-   int counter = 0;
-   while ((readRegister16(VL53L1_FIRMWARE__SYSTEM_STATUS) & 0x01) == 0)
-   {
-      if (counter++ == 2000)
-      {
-         somax_log_add(SOMAX_LOG_ERR, "VL53L1X: begin. soft reset timeout");
-         break;
-         //return (false); //Sensor timed out
-      }
-      delay(10);
-   }
+   // int counter = 0;
+   // while ((readRegister16(VL53L1_FIRMWARE__SYSTEM_STATUS) & 0x01) == 0)
+   // {
+   //    if (counter++ == 2000)
+   //    {
+   //       somax_log_add(SOMAX_LOG_ERR, "VL53L1X: begin. soft reset timeout");
+   //       break;
+   //       //return (false); //Sensor timed out
+   //    }
+   //    delay(10);
+   // }
 
    //Set I2C to 2.8V mode. In this mode 3.3V I2C is allowed.
    //mcass using 1.8v mode for edison, hk960

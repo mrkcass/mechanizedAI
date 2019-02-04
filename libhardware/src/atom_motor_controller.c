@@ -1,10 +1,25 @@
-
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// author: mark cass
+// project: somax personal AI
+// project url: https://mechanizedai.com
+// license: open source and free for all uses without encumbrance.
+//
+// FILE: atom_motor_controller.c
+// DESCRIPTION: control motors via 4x GPIO per motor on the atom CPU.
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 #include "stdlib.h"
 #include "string.h"
 #include "wire.h"
 #include "time.h"
 #include "pthread.h"
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//CONSTANTS
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 #define NUM_MOTORS   3
 #define STEPS_PER_REVOLUTION 200
 #define MIN_PHASE    0
@@ -54,16 +69,31 @@
 
 #define GPIO_MTRROTATE_IN1  182
 #define GPIO_MTRROTATE_IN2  114
-#define GPIO_MTRROTATE_IN3  129
-#define GPIO_MTRROTATE_IN4  131
+#define GPIO_MTRROTATE_IN3  79
+#define GPIO_MTRROTATE_IN4  15
 
 #define IDLE_PWM_RATE         3UL
 #define POWER_ON_INTERVAL_MS  500
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//FUNCTION DECLARATIONS
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//DATA STRUCTURES
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 extern void slice_controller_run();
 extern void run_sliced_msg_distribute(char *msg, int msg_len);
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//DATA
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 int motor_speed[NUM_MOTORS] = {0, 0, 0};
 int motor_phase[NUM_MOTORS] = {0, 0, 0};
 int motor_speed_delay[NUM_POWER_LEVELS][NUM_MOTORS] =
@@ -96,6 +126,11 @@ int power_state[NUM_MOTORS] = {POWER_OFF, POWER_OFF, POWER_OFF};
 
 unsigned long power_up_time_ms = 0;
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//PUBLIC FUNCTIONS
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 unsigned long time_micros()
 {
    struct timespec now;
@@ -145,7 +180,6 @@ void mx1508_to_motor(int phase, int a, int b, int c, int d)
       gpio_lines[b].write(low);
       gpio_lines[c].write(low);
       gpio_lines[d].write(low);
-
    }
 
    if (phase == 1)
@@ -289,7 +323,9 @@ int mcu_process_message(char *msg, char *reply)
 
    if (!processed && msg[0] == 'p' && msg[1] == 'o' && msg[2] == 'w' && msg[6] == 'n')
    {
-      //poweron
+      //poweron      - power on all motors
+      //msg format   -  "poweron"
+      //reply format - not used
       power_up_time_ms = time_millis();
       power_state[MOTOR_TILT] = POWER_ON_WAIT;
       power_state[MOTOR_PAN] = POWER_ON_WAIT;
@@ -307,7 +343,10 @@ int mcu_process_message(char *msg, char *reply)
    }
    else if (!processed && msg[0] == 'p' && msg[1] == 'o' && msg[2] == 'w' && msg[6] == 'f')
    {
-      //poweroff
+      //poweroff      - power off all motors
+      //msg format    - "poweroff"
+      //reply  format - not used
+
       if (power_state[MOTOR_PAN] != POWER_OFF)
          power_state[MOTOR_PAN] = POWER_OFF;
       if (power_state[MOTOR_TILT] != POWER_OFF)
@@ -319,7 +358,9 @@ int mcu_process_message(char *msg, char *reply)
    }
    else if (!processed && msg[0] == 's' && msg[4] == 'd')
    {
-      //speed command format "speed[X|Y|Z][+|-]NN"
+      //speed command - cause a motor to step continuously at a set speed.
+      //msg format   "speed[X|Y|Z][+|-]NN"
+      //reply format - not used
 
       int sign = msg[SPEED_SIGN];
       int x10 = msg[SPEED_10X] - '0';
@@ -355,9 +396,13 @@ int mcu_process_message(char *msg, char *reply)
    }
    else if (!processed && msg[0] == 's' && msg[3] == 'p')
    {
-      //step command format "step[X|Y|Z][+|-]NNSSSS"
-      //NN = speed
-      //SSSS = steps
+      //step command - cause a motor to step a specific number of steps
+      //               in a specific direction.
+      //msg format   - "step[X|Y|Z][+|-]NNSSSS"
+      //                X|Y|Z = motor to step. x = pan, y = tilt, z = rotate
+      //                NN = speed
+      //                SSSS = steps
+      //reply format - not used
 
       int sign = msg[STEPCMD_SPEED_SIGN];
       int speedx10 = msg[STEPCMD_SPEED_10X] - '0';
@@ -396,6 +441,13 @@ int mcu_process_message(char *msg, char *reply)
    }
    else if (!processed && msg[0] == 'p' && msg[1] == 'o' && msg[2] == 's')
    {
+      //position      - query motor position in steps from the home position
+      //msg format    - "position"
+      //replay format - "XXX YYY ZZZ"
+      //                   XXX = 3 digit zero padded integer. pan motor position
+      //                   YYY = 3 digit zero padded integer. tilt motor position
+      //                   ZZZ = 3 digit zero padded integer. rotoate motor position
+
       sprintf(reply, "%+03d %+03d %+03d\n", motor_steps_from_home[0], motor_steps_from_home[1], motor_steps_from_home[2]);
 
       processed = 1;
@@ -403,6 +455,11 @@ int mcu_process_message(char *msg, char *reply)
    return processed;
 }
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//PRIVATE FUNCTIONS
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 void* main_loop(void * arg);
 pthread_t main_loop_tid;
 

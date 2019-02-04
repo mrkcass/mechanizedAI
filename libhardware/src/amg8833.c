@@ -54,7 +54,7 @@ static const char amg_framerate_strings[][32] =
 };
 //interrupt control register
 #define AMG_REG_INTERRUPT_CONTROL      0x03
-      //enable bits
+   //enable bits
 #define AMG_INT_ENABLE_BMASK           0b00000001
 #define AMG_INT_ENABLE_BSHIFT          0
 #define AMG_INT_ENABLE_READ            0x00
@@ -64,7 +64,7 @@ static const char amg_interruptenable_strings[][32] =
    "read only interrupts",
    "raising interrupts",
 };
-      //mode bits
+   //mode bits
 #define AMG_INT_MODE_BMASK             0b00000010
 #define AMG_INT_MODE_BSHIFT            1
 static const char amg_interruptmode_strings[][32] =
@@ -160,6 +160,12 @@ static struct AMG8833_DEVICE_PROPERTIES amg8833_devices[AMG8833_NUM_DEVICES] =
       "AMG8833_DEVICEID_1",
       I2C_BUSID_1,
       0x68,
+   },
+   {
+      AMG8833_DEVICEID_2,
+      "AMG8833_DEVICEID_2",
+      I2C_BUSID_0,
+      0x69,
    },
 };
 
@@ -280,9 +286,9 @@ float amg8833_inf_device_temperature(amg8833_context ctx)
 // PARAM: ctx - AMG8833 context.
 // PARAM: callback - function to call when a new frame of pixels is ready
 // PARAM: frame_buffer - a data buffer that will hold new frame pixel data. if not
-//           provided, a buffer will be allocated using malloc which will be sent to
-//           the observer by way of 'callbk'. any buffer provided, no matter the storage
-//           class is the property of the caller and should be destroyed accordingly
+//          provided, a buffer will be allocated using malloc which will be sent to
+//          the observer by way of 'callbk'. any buffer provided, no matter the storage
+//          class is the property of the caller and should be destroyed accordingly
 //
 //if callback bufffer is NULL, use the driver buffer.
 void amg8833_cfg_output_callbk_framedata(amg8833_context ctx, amg8833_callback_id callback_id, amg8833_framedata_callback callbk, amg8833_framedata_buffer frame_buffer)

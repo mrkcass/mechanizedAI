@@ -48,7 +48,7 @@ struct THERMCAM_CONTEXT
 //names. for example open,close and info functions functions .
 static const char thermcam_names[][32] =
     {"THERMCAM-NULL", "THERMCAM-GIMBAL[AMG8833]"};
-static int thermcam_device_id_map[] = {0, AMG8833_DEVICEID_1};
+static int thermcam_device_id_map[] = {0, AMG8833_DEVICEID_1, AMG8833_DEVICEID_2};
 
 static int contextlist_used;
 static THERMCAM_CONTEXT context_list[THERMCAM_MAX_CONTEXTS];

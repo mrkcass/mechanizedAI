@@ -105,10 +105,13 @@ bool somax_commandline_options_handler(int argc, char * argv[])
 {
    if (argc > 1)
    {
-      if (!strcmp(argv[1], "show-config"))
+      for (int i=1; i < argc; i++)
       {
-         somax_print_config(SOMAX_PRINTOPTION_CONFIG);
-         return true;
+         if (!strcmp(argv[i], "show-config"))
+         {
+            somax_print_config(SOMAX_PRINTOPTION_CONFIG);
+            return true;
+         }
       }
    }
    return false;
@@ -118,9 +121,12 @@ bool somax_commandline_has_option(int argc, char *argv[], const char option_name
 {
    if (argc > 1)
    {
-      if (!strcmp(argv[1], option_name))
+      for (int i=1; i < argc; i++)
       {
-         return true;
+         if (!strcmp(argv[i], option_name))
+         {
+            return true;
+         }
       }
    }
    return false;

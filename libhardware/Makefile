@@ -2,21 +2,24 @@
 
 PROJ_NAME=libhardware.a
 
-OBJECT_FILES = ahrs.o						\
-					adc50.o						\
-					bno055.o						\
-					thermalcamera.o			\
-					amg8833.o					\
-					joystick3d_stick.o 		\
-					mcu_motor_controller.o 	\
-					atom_motor_controller.o \
-					ledstrip-ws2812b.o		\
-					micarray-ics52000.o		\
-					wire.o 						\
-					i2c_interface.o 			\
-					spi_interface.o			\
-					gpio_interface.o			\
-					libhardware.o				\
+OBJECT_FILES = ahrs.o										\
+					adc50.o										\
+					bno055.o										\
+					lidarcamera.o								\
+					vl53l1x.o									\
+					SparkFun_VL53L1X_Arduino_Library.o	\
+					thermalcamera.o							\
+					amg8833.o									\
+					joystick3d_stick.o 						\
+					mcu_motor_controller.o 					\
+					atom_motor_controller.o 				\
+					ledstrip-ws2812b.o						\
+					micarray-ics52000.o						\
+					wire.o 										\
+					i2c_interface.o 							\
+					spi_interface.o							\
+					gpio_interface.o							\
+					libhardware.o								\
 					somax.o
 
 

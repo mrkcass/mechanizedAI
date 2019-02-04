@@ -29,27 +29,49 @@ echo "mode1" > /sys/kernel/debug/gpio_debug/gpio20/current_pinmux
 echo "  GPIO19 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio19/current_pinmux)"
 echo "  GPIO20 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio20/current_pinmux)"
 
-
-echo "Init SPI-5.1"
-if [[ ! -e /sys/class/gpio/gpio130 ]]; then
-   echo 130 > /sys/class/gpio/export
-fi
-echo "mode0" > /sys/kernel/debug/gpio_debug/gpio130/current_pinmux
-echo "out" > /sys/kernel/debug/gpio_debug/gpio130/current_direction
-echo "pulldown" > /sys/kernel/debug/gpio_debug/gpio130/current_pullmode
-echo "  GPIO130 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio130/current_pinmux)"
-echo "  GPIO130 direction: $(cat /sys/kernel/debug/gpio_debug/gpio130/current_direction)"
-echo "  GPIO130 pullmode: $(cat /sys/kernel/debug/gpio_debug/gpio130/current_pullmode)"
-
+# UART-1
+echo "Init UART-1"
 if [[ ! -e /sys/class/gpio/gpio128 ]]; then
    echo 128 > /sys/class/gpio/export
 fi
-echo "mode0" > /sys/kernel/debug/gpio_debug/gpio128/current_pinmux
-echo "out" > /sys/kernel/debug/gpio_debug/gpio128/current_direction
-echo "pulldown" > /sys/kernel/debug/gpio_debug/gpio128/current_pullmode
+echo "mode1" > /sys/kernel/debug/gpio_debug/gpio128/current_pinmux
+if [[ ! -e /sys/class/gpio/gpio129 ]]; then
+   echo 129 > /sys/class/gpio/export
+fi
+echo "mode1" > /sys/kernel/debug/gpio_debug/gpio129/current_pinmux
+if [[ ! -e /sys/class/gpio/gpio130 ]]; then
+   echo 130 > /sys/class/gpio/export
+fi
+echo "mode1" > /sys/kernel/debug/gpio_debug/gpio130/current_pinmux
+if [[ ! -e /sys/class/gpio/gpio131 ]]; then
+   echo 131 > /sys/class/gpio/export
+fi
+echo "mode1" > /sys/kernel/debug/gpio_debug/gpio131/current_pinmux
 echo "  GPIO128 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio128/current_pinmux)"
-echo "  GPIO128 direction: $(cat /sys/kernel/debug/gpio_debug/gpio128/current_direction)"
-echo "  GPIO128 pullmode: $(cat /sys/kernel/debug/gpio_debug/gpio128/current_pullmode)"
+echo "  GPIO129 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio129/current_pinmux)"
+echo "  GPIO130 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio130/current_pinmux)"
+echo "  GPIO131 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio131/current_pinmux)"
+
+echo "Init SPI-5.1"
+if [[ ! -e /sys/class/gpio/gpio83 ]]; then
+   echo 83 > /sys/class/gpio/export
+fi
+echo "mode0" > /sys/kernel/debug/gpio_debug/gpio83/current_pinmux
+echo "out" > /sys/kernel/debug/gpio_debug/gpio83/current_direction
+echo "pulldown" > /sys/kernel/debug/gpio_debug/gpio83/current_pullmode
+echo "  GPIO83 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio83/current_pinmux)"
+echo "  GPIO83 direction: $(cat /sys/kernel/debug/gpio_debug/gpio83/current_direction)"
+echo "  GPIO83 pullmode: $(cat /sys/kernel/debug/gpio_debug/gpio83/current_pullmode)"
+
+if [[ ! -e /sys/class/gpio/gpio81 ]]; then
+   echo 81 > /sys/class/gpio/export
+fi
+echo "mode0" > /sys/kernel/debug/gpio_debug/gpio81/current_pinmux
+echo "out" > /sys/kernel/debug/gpio_debug/gpio81/current_direction
+echo "pulldown" > /sys/kernel/debug/gpio_debug/gpio81/current_pullmode
+echo "  GPIO81 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio81/current_pinmux)"
+echo "  GPIO81 direction: $(cat /sys/kernel/debug/gpio_debug/gpio81/current_direction)"
+echo "  GPIO81 pullmode: $(cat /sys/kernel/debug/gpio_debug/gpio81/current_pullmode)"
 
 if [[ ! -e /sys/class/gpio/gpio109 ]]; then
    echo 109 > /sys/class/gpio/export
@@ -117,23 +139,14 @@ echo "  GPIO42 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio42/current_pinmux)
 echo "  GPIO42 direction: $(cat /sys/kernel/debug/gpio_debug/gpio42/current_direction)"
 echo "  GPIO42 pullmode: $(cat /sys/kernel/debug/gpio_debug/gpio42/current_pullmode)"
 
-if [[ ! -e /sys/class/gpio/gpio77 ]]; then
-   echo 77 > /sys/class/gpio/export
-fi
-echo "mode0" > /sys/kernel/debug/gpio_debug/gpio77/current_pinmux
-echo "out" > /sys/kernel/debug/gpio_debug/gpio77/current_direction
-echo "pullup" > /sys/kernel/debug/gpio_debug/gpio77/current_pullmode
-echo "high" > /sys/kernel/debug/gpio_debug/gpio77/current_value
-echo "  GPIO77 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio77/current_pinmux)"
-echo "  GPIO77 direction: $(cat /sys/kernel/debug/gpio_debug/gpio77/current_direction)"
-echo "  GPIO77 pullmode: $(cat /sys/kernel/debug/gpio_debug/gpio77/current_pullmode)"
-
+echo "Init CAMLIDAR-XSHUT"
 if [[ ! -e /sys/class/gpio/gpio82 ]]; then
    echo 82 > /sys/class/gpio/export
 fi
 echo "mode0" > /sys/kernel/debug/gpio_debug/gpio82/current_pinmux
-echo "in" > /sys/kernel/debug/gpio_debug/gpio82/current_direction
+echo "out" > /sys/kernel/debug/gpio_debug/gpio82/current_direction
 echo "pullup" > /sys/kernel/debug/gpio_debug/gpio82/current_pullmode
+echo "low" > /sys/kernel/debug/gpio_debug/gpio82/current_value
 echo "  GPIO82 pinmux: $(cat /sys/kernel/debug/gpio_debug/gpio82/current_pinmux)"
 echo "  GPIO82 direction: $(cat /sys/kernel/debug/gpio_debug/gpio82/current_direction)"
 echo "  GPIO82 pullmode: $(cat /sys/kernel/debug/gpio_debug/gpio82/current_pullmode)"
@@ -148,8 +161,8 @@ declare -A motor_gpio_pin=(
    [MTRPAN-IN4]="183"
    [MTRROTATE-IN1]="182"
    [MTRROTATE-IN2]="114"
-   [MTRROTATE-IN3]="129"
-   [MTRROTATE-IN4]="131"
+   [MTRROTATE-IN3]="79"
+   [MTRROTATE-IN4]="15"
    [MTRTILTU-IN1]="44"
    [MTRTILTU-IN2]="46"
    [MTRTILTU-IN3]="48"

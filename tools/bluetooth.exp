@@ -1,0 +1,31 @@
+#!/usr/bin/expect
+
+#
+# automation for starting bluetooth.
+#
+
+set prompt "root@edison*#"
+
+set timeout 120
+
+spawn bash
+
+send "bluetoothctl\r"
+
+expect {
+   timeout {
+      puts "Connection timed out"
+      exit 1
+   }
+
+   "bluetoothctl*#" {
+      send "agent KeyboardDisplay\r"
+   }
+
+}
+
+expect {
+   "bluetoothct*#" {
+      send "quit\r"
+   }
+}

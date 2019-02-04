@@ -7,8 +7,10 @@ OBJECT_FILES = somaxui_main.o				\
 					somaxui_menu.o				\
 					app_thermalview.o 		\
 					app_gimbalhold.o			\
+					app_lidarview.o			\
 													\
 					gimbal.o						\
+					bluetooth_stick.o			\
 													\
 					videocomposer.o			\
 					videodisplay.o				\

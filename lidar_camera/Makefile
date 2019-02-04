@@ -2,10 +2,7 @@
 
 PROJ_NAME=lidar_camera
 
-OBJECT_FILES = lidarcamera_main.o						\
-					lidarcamera.o								\
-					vl53l1x.o									\
-					SparkFun_VL53L1X_Arduino_Library.o	\
+OBJECT_FILES = lidarcamera_main.o
 
 
 SRC_DIR = src

@@ -12,8 +12,9 @@
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-#define THERMCAM_NUM_CAMERAS  1
-#define THERMCAMID_GIMBAL     1
+#define THERMCAM_NUM_CAMERAS        2
+#define THERMCAMID_GIMBAL_LEFT      1
+#define THERMCAMID_GIMBAL_RIGHT     2
 
 #define THERMCAM_CONTEXT_NULL 0
 

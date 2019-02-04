@@ -167,8 +167,8 @@ static bool gpio_init_controller(gpio_controllerid controller_id)
 #define GPIO_EDISON_NUM_PINS 16
 static int edison_gpio_map[GPIO_EDISON_NUM_PINS] =
 {
-   130, //spi 0 (edison spi 1) RESET
-   128, //spi 0 (edison spi 1) DC (data/command)
+    83, //spi 0 (edison spi 1) RESET
+    81, //spi 0 (edison spi 1) DC (data/command)
 };
 
 struct EDISON_GPIO_CONTEXT
@@ -188,6 +188,8 @@ static gpio_context edison_init_pin(gpio_pinid pin_id, gpio_direction direction)
 
    ctx->context_slot = controller->context_count;
    ed_ctx->pin = mraa_gpio_init_raw(ed_pin);
+   if (ed_ctx->pin == NULL)
+      somax_log_add(SOMAX_LOG_ERR, "GPIO. init_pin. couldn't init pin = %d", pin_id);
    mraa_gpio_use_mmaped(ed_ctx->pin, 1);
    edison_cfg_direction(ctx, direction);
 
