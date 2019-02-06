@@ -18,6 +18,7 @@ To be Defined
    communiation up and returning configuration information. I also had to move wires around as the Edison
    uses the UART 1 for the FTDI console. This leaves UART 2 which supports hardware flow control 
    though it is not needed in the application. The hardware flow control RTS/CTS lines were previously repurposed for GPIO but this is not allowed when using UART1 so those GPIO lines were moved.
+* **February 5, 2109** - Added more diagnostic outputs for mirror, color mode, and power save.
 #
 
 

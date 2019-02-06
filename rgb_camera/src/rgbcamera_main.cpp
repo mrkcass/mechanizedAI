@@ -293,6 +293,18 @@ static int camrgb_info(mraa_uart_context uart)
    smx_byte cmd_compression[]    = {0x56, 0x00, 0x31, 0x05, 0x01, 0x01, 0x12, 0x04, 0x00};
    smx_byte rpl_compression[]    = {0x76, 0x00, 0x31, 0x00, 0x00};
 
+   smx_byte cmd_mirror_status[]  = {0x56, 0x00, 0x3B, 0x00};
+   smx_byte rpl_mirror_status[]  = {0x76, 0x00, 0x3B, 0x00, 0x02};
+
+   smx_byte cmd_color_status[]  = {0x56, 0x00, 0x3D, 0x00};
+   smx_byte rpl_color_status[]  = {0x76, 0x00, 0x3D, 0x00, 0x03};
+
+   smx_byte cmd_power_save_enabled_status[]  = {0x56, 0x00, 0x3F, 0x01, 0x00};
+   smx_byte rpl_power_save_enabled_status[]  = {0x76, 0x00, 0x3F, 0x00, 0x02};
+
+   smx_byte cmd_power_save_mode_status[]  = {0x56, 0x00, 0x3F, 0x01, 0x01};
+   smx_byte rpl_power_save_mode_status[]  = {0x76, 0x00, 0x3F, 0x00, 0x03};
+
    //smx_byte cmd_start[]          = {0x56, 0x00, 0x36, 0x01, 0x00};
    //smx_byte cmd_stop[]           = {0x56, 0x00, 0x36, 0x01, 0x03};
    //smx_byte cmd_length[]         = {0x56, 0x00, 0x34, 0x01, 0x00};
@@ -327,6 +339,49 @@ static int camrgb_info(mraa_uart_context uart)
    reply_len = camrgb_send_command(uart, cmd_get_version, sizeof(cmd_get_version), reply, 16, false);
    camrgb_verify_reply(reply, rpl_get_version, sizeof(rpl_get_version));
    camrgb_print_reply("version reply", reply, sizeof(rpl_get_version), reply_len);
+   printf("\n");
+
+   printf ("******** Sending mirror status command **************\n");
+   reply_len = camrgb_send_command(uart, cmd_mirror_status, sizeof(cmd_mirror_status), reply, 7, false);
+   camrgb_verify_reply(reply, rpl_mirror_status, sizeof(rpl_mirror_status));
+   if (reply[reply_len-1] == 0x01)
+      reply_len = sprintf((char*)reply, "%s controlled mirror mode enabled", reply[reply_len-2] ? "UART" : "GPIO");
+   else
+      reply_len = sprintf((char*)reply, "%s controlled mirror mode disabled", reply[reply_len-2] ? "UART" : "GPIO");
+   camrgb_print_reply("mirror status reply", reply, 0, reply_len);
+   printf("\n");
+
+   printf ("******** Sending color status command **************\n");
+   reply_len = camrgb_send_command(uart, cmd_color_status, sizeof(cmd_color_status), reply, 7, false);
+   camrgb_verify_reply(reply, rpl_color_status, sizeof(rpl_color_status));
+   if (reply[reply_len-2] == 0x00)
+      //might be decoding the color/black&white backwards
+      reply_len = sprintf((char*)reply, "%s controlled auto select %s", reply[reply_len-3] ? "UART" : "GPIO", reply[reply_len-1] ? "color" : "black&white");
+   else if (reply[reply_len-2] == 0x01)
+      reply_len = sprintf((char*)reply, "%s controlled manual select color", reply[reply_len-3] ? "UART" : "GPIO");
+   else
+      reply_len = sprintf((char*)reply, "%s controlled manual select black&white", reply[reply_len-3] ? "UART" : "GPIO");
+   camrgb_print_reply("color status reply", reply, 0, reply_len);
+   printf("\n");
+
+   printf ("******** Sending power save enabled status command **************\n");
+   reply_len = camrgb_send_command(uart, cmd_power_save_enabled_status, sizeof(cmd_power_save_enabled_status), reply, 7, false);
+   camrgb_verify_reply(reply, rpl_power_save_enabled_status, sizeof(rpl_power_save_enabled_status));
+   if (reply[reply_len-1] == 0x00)
+      reply_len = sprintf((char*)reply, "%s controlled power-save off", reply[reply_len-2] ? "UART" : "GPIO");
+   else if (reply[reply_len-1] == 0x01)
+      reply_len = sprintf((char*)reply, "%s controlled power-save on", reply[reply_len-2] ? "UART" : "GPIO");
+   camrgb_print_reply("power-save enabled reply", reply, 0, reply_len);
+   printf("\n");
+
+   printf ("******** Sending power save mode status command **************\n");
+   reply_len = camrgb_send_command(uart, cmd_power_save_mode_status, sizeof(cmd_power_save_mode_status), reply, 7, false);
+   camrgb_verify_reply(reply, rpl_power_save_mode_status, sizeof(rpl_power_save_mode_status));
+   if (reply[reply_len-3] & 0x02)
+      reply_len = sprintf((char*)reply, "motion activated %s shutdown in 0x%X 0x%X", reply[reply_len-3] & 0x01 ? "frame buffer" : "jpeg compressor", reply[reply_len-2], reply[reply_len-1]);
+   else
+      reply_len = sprintf((char*)reply, "timer activated %s shutdown in 0x%X 0x%X", reply[reply_len-3] & 0x01 ? "frame buffer" : "jpeg compressor", reply[reply_len-2], reply[reply_len-1]);
+   camrgb_print_reply("power-save mode reply", reply, 0, reply_len);
    printf("\n");
 
    return 0;
